@@ -7,6 +7,8 @@
 //
 
 #import "ViewController.h"
+#include "mosquitto.h"
+#include "mosquitto_internal.h"
 
 @interface ViewController ()
 
@@ -17,6 +19,9 @@
 - (void)viewDidLoad {
     [super viewDidLoad];
     // Do any additional setup after loading the view, typically from a nib.
+    
+    struct mosquitto mosq = {};
+    mosquitto_reconnect(&mosq);
 }
 
 

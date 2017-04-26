@@ -7,6 +7,7 @@
 	objects = {
 
 /* Begin PBXBuildFile section */
+		6D6ED8821EB0CD86005DBE4A /* message_mosq.c in Sources */ = {isa = PBXBuildFile; fileRef = 6D6ED8801EB0CD86005DBE4A /* message_mosq.c */; };
 		6D7796DD1EAEE64200AD5754 /* main.m in Sources */ = {isa = PBXBuildFile; fileRef = 6D7796DC1EAEE64200AD5754 /* main.m */; };
 		6D7796E01EAEE64200AD5754 /* AppDelegate.m in Sources */ = {isa = PBXBuildFile; fileRef = 6D7796DF1EAEE64200AD5754 /* AppDelegate.m */; };
 		6D7796E31EAEE64200AD5754 /* ViewController.m in Sources */ = {isa = PBXBuildFile; fileRef = 6D7796E21EAEE64200AD5754 /* ViewController.m */; };
@@ -21,6 +22,8 @@
 /* End PBXBuildFile section */
 
 /* Begin PBXFileReference section */
+		6D6ED8801EB0CD86005DBE4A /* message_mosq.c */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.c; path = message_mosq.c; sourceTree = "<group>"; };
+		6D6ED8811EB0CD86005DBE4A /* message_mosq.h */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.h; path = message_mosq.h; sourceTree = "<group>"; };
 		6D7796D81EAEE64200AD5754 /* MQTTServices.app */ = {isa = PBXFileReference; explicitFileType = wrapper.application; includeInIndex = 0; path = MQTTServices.app; sourceTree = BUILT_PRODUCTS_DIR; };
 		6D7796DC1EAEE64200AD5754 /* main.m */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.c.objc; path = main.m; sourceTree = "<group>"; };
 		6D7796DE1EAEE64200AD5754 /* AppDelegate.h */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.c.h; path = AppDelegate.h; sourceTree = "<group>"; };
@@ -102,10 +105,12 @@
 			isa = PBXGroup;
 			children = (
 				6D7796FA1EAF00A900AD5754 /* dummypthread.h */,
-				6D7797091EAF583D00AD5754 /* mosquitto_internal.h */,
 				6D7796FE1EAF173A00AD5754 /* mqtt3_protocol.h */,
+				6D7797091EAF583D00AD5754 /* mosquitto_internal.h */,
 				6D7796FF1EAF17EB00AD5754 /* memory_mosq.c */,
 				6D7797001EAF17EB00AD5754 /* memory_mosq.h */,
+				6D6ED8801EB0CD86005DBE4A /* message_mosq.c */,
+				6D6ED8811EB0CD86005DBE4A /* message_mosq.h */,
 				6D7796F31EAEE75A00AD5754 /* mosquitto.c */,
 				6D7796F41EAEE75A00AD5754 /* mosquitto.h */,
 				6D7796F71EAEE93C00AD5754 /* net_mosq.c */,
@@ -194,6 +199,7 @@
 				6D7797041EAF320100AD5754 /* util_mosq.c in Sources */,
 				6D7796F91EAEE93C00AD5754 /* net_mosq.c in Sources */,
 				6D7796E31EAEE64200AD5754 /* ViewController.m in Sources */,
+				6D6ED8821EB0CD86005DBE4A /* message_mosq.c in Sources */,
 				6D7796F51EAEE75A00AD5754 /* mosquitto.c in Sources */,
 				6D7796E01EAEE64200AD5754 /* AppDelegate.m in Sources */,
 				6D7797011EAF17EB00AD5754 /* memory_mosq.c in Sources */,
@@ -358,6 +364,7 @@
 				6D7796F11EAEE64200AD5754 /* Release */,
 			);
 			defaultConfigurationIsVisible = 0;
+			defaultConfigurationName = Release;
 		};
 /* End XCConfigurationList section */
 	};

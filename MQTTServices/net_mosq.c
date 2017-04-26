@@ -166,9 +166,7 @@ int _mosq_packet_queue(struct mosquitto *mosq, struct _mosquitto_packet *packet)
     assert(mosq);
     assert(packet);
     
-    packet->pos = 0;
-    packet->to_process = packet->packet_length;
-    
+    /* 链表实现了发送队列。设置了两个指针分别指向队列的头尾 */
     packet->next = NULL;
     if (mosq->out_packet)
     {
@@ -190,3 +188,72 @@ int _mosq_packet_queue(struct mosquitto *mosq, struct _mosquitto_packet *packet)
     }
 }
 
+int _mosquitto_packet_write(struct mosquitto *mosq)
+{
+    struct _mosquitto_packet *packet;
+    
+    if (!mosq) return MOSQ_ERR_INVAL;
+    if (mosq->sock == INVALID_SOCKET) return MOSQ_ERR_NO_CONN;
+    
+    /* 
+     当前发送包为空且发送队列不为空
+     */
+    if (mosq->out_packet && !mosq->current_out_packet)
+    {
+        mosq->current_out_packet = mosq->out_packet;
+        mosq->out_packet = mosq->out_packet->next;
+        if (!mosq->out_packet)
+        {
+            mosq->out_packet_last = NULL;
+        }
+    }
+    
+    ssize_t write_length;
+    while (mosq->current_out_packet)
+    {
+        packet = mosq->current_out_packet;
+        packet->pos = 0;
+        packet->to_process = packet->packet_length;
+        while (packet->to_process > 0)
+        {
+            write_length =  write(mosq->sock, &(packet->payload[packet->pos]), packet->to_process);
+            if (write_length > 0)
+            {
+                packet->pos += write_length;
+                packet->to_process -= write_length;
+            }
+            else
+            {
+                if (errno == EAGAIN || errno == EWOULDBLOCK)
+                {
+                    return MOSQ_ERR_SUCCESS;
+                }
+                else
+                {
+                    switch(errno)
+                    {
+                        case ECONNRESET:
+                            return MOSQ_ERR_CONN_LOST;
+                        default:
+                            return MOSQ_ERR_ERRNO;
+                    }
+                }
+            }
+        }
+        
+        /* Free data, reset values */
+        mosq->current_out_packet = mosq->out_packet;
+        if (mosq->out_packet)
+        {
+            mosq->out_packet = mosq->out_packet->next;
+            if (!mosq->out_packet)
+            {
+                mosq->out_packet_last = NULL;
+            }
+        }
+        
+        _mosquitto_packet_cleanup(packet);
+        _mosquitto_free(packet);
+    }
+    return MOSQ_ERR_SUCCESS;
+}

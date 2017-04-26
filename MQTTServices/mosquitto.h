@@ -12,6 +12,7 @@
 #include <stdio.h>
 #include "mosquitto.h"
 #include <stdbool.h>
+#include "mosquitto_internal.h"
 
 #ifndef INVALID_SOCKET
 #define INVALID_SOCKET -1
@@ -52,8 +53,9 @@ struct mosquitto_message{
 
 struct mosquitto;
 
-#endif /* mosquitto_h */
+int mosquitto_reconnect(struct mosquitto *mosq);
 
+#endif /* mosquitto_h */
 
 
 
