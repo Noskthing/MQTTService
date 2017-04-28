@@ -20,8 +20,18 @@
     [super viewDidLoad];
     // Do any additional setup after loading the view, typically from a nib.
     
-    struct mosquitto mosq = {};
-    mosquitto_reconnect(&mosq);
+    struct mosquitto *mosq =  mosquitto_new("", false, NULL);
+    mosq->username = "";
+    mosq->password = "";
+    mosq->host = "";
+    
+    int rs = mosquitto_reconnect(mosq);
+    NSLog(@"rs is %d",rs);
+    
+    dispatch_queue_t queue = dispatch_queue_create("E9823A44", NULL);
+    dispatch_async(queue, ^{
+        mosquitto_loop_forever(mosq, -1, 1);
+    });
 }
 
 
