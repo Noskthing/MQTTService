@@ -13,4 +13,5 @@
 #include "mosquitto_internal.h"
 
 void _mosq_message_reconnect_reset(struct mosquitto *mosq);
+
 #endif /* message_mosq_h */

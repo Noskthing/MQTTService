@@ -38,5 +38,6 @@ typedef int ssize_t;
 
 
 
-int _mosq_socket_connect(struct mosquitto* mosq,const char * host,uint16_t port,const char * bind_address,bool blocking);
-int _mosq_packet_queue(struct mosquitto *mosq, struct _mosquitto_packet *packet);
+int _mosquitto_socket_connect(struct mosquitto* mosq,const char * host,uint16_t port,const char * bind_address,bool blocking);
+int _mosquitto_packet_queue(struct mosquitto *mosq, struct _mosquitto_packet *packet);
+int _mosquitto_socket_close(struct mosquitto *mosq);

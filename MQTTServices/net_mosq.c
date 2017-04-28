@@ -12,7 +12,7 @@
 #include <stdlib.h>
 #include <string.h>
 
-int _mosq_try_connect(const char *host, uint16_t port, int *sock, const char *bind_address, bool blocking)
+int _mosquitto_try_connect(const char *host, uint16_t port, int *sock, const char *bind_address, bool blocking)
 {
     struct addrinfo hints;
     struct addrinfo *ainfo, *rp;
@@ -140,7 +140,7 @@ int _mosq_try_connect(const char *host, uint16_t port, int *sock, const char *bi
     return MOSQ_ERR_SUCCESS;
 }
 
-int _mosq_socket_connect(struct mosquitto* mosq,const char * host,uint16_t port,const char * bind_address,bool blocking)
+int _mosquitto_socket_connect(struct mosquitto* mosq,const char * host,uint16_t port,const char * bind_address,bool blocking)
 {
     int sock = INVALID_SOCKET;
     int rc;
@@ -149,7 +149,7 @@ int _mosq_socket_connect(struct mosquitto* mosq,const char * host,uint16_t port,
     if (!mosq || !host || !port) return MOSQ_ERR_INVAL;
     
     //create socket,we will return error code if fail otherwise go on
-    rc = _mosq_try_connect(host, port, &sock, bind_address, blocking);
+    rc = _mosquitto_try_connect(host, port, &sock, bind_address, blocking);
     if (rc != MOSQ_ERR_SUCCESS) return  rc;
     
     /*
@@ -161,33 +161,6 @@ int _mosq_socket_connect(struct mosquitto* mosq,const char * host,uint16_t port,
     return MOSQ_ERR_SUCCESS;
 }
 
-int _mosq_packet_queue(struct mosquitto *mosq, struct _mosquitto_packet *packet)
-{
-    assert(mosq);
-    assert(packet);
-    
-    /* 链表实现了发送队列。设置了两个指针分别指向队列的头尾 */
-    packet->next = NULL;
-    if (mosq->out_packet)
-    {
-        mosq->out_packet_last->next = packet;
-    }
-    else
-    {
-        mosq->out_packet = packet;
-    }
-    mosq->out_packet_last = packet;
-    
-    if (mosq->in_callback == false && mosq->threaded == false)
-    {
-        return -1;
-    }
-    else
-    {
-        return MOSQ_ERR_SUCCESS;
-    }
-}
-
 int _mosquitto_packet_write(struct mosquitto *mosq)
 {
     struct _mosquitto_packet *packet;
@@ -195,7 +168,7 @@ int _mosquitto_packet_write(struct mosquitto *mosq)
     if (!mosq) return MOSQ_ERR_INVAL;
     if (mosq->sock == INVALID_SOCKET) return MOSQ_ERR_NO_CONN;
     
-    /* 
+    /*
      当前发送包为空且发送队列不为空
      */
     if (mosq->out_packet && !mosq->current_out_packet)
@@ -256,4 +229,47 @@ int _mosquitto_packet_write(struct mosquitto *mosq)
         _mosquitto_free(packet);
     }
     return MOSQ_ERR_SUCCESS;
+}
+
+int _mosquitto_packet_queue(struct mosquitto *mosq, struct _mosquitto_packet *packet)
+{
+    assert(mosq);
+    assert(packet);
+    
+    /* 链表实现了发送队列。设置了两个指针分别指向队列的头尾 */
+    packet->next = NULL;
+    if (mosq->out_packet)
+    {
+        mosq->out_packet_last->next = packet;
+    }
+    else
+    {
+        mosq->out_packet = packet;
+    }
+    mosq->out_packet_last = packet;
+    
+    if (mosq->in_callback == false && mosq->threaded == false)
+    {
+        return _mosquitto_packet_write(mosq);
+    }
+    else
+    {
+        return MOSQ_ERR_SUCCESS;
+    }
+}
+
+
+int _mosquitto_socket_close(struct mosquitto *mosq)
+{
+    int rc = 0;
+    assert(mosq);
+    /*
+     后续添加了SSL/TLS的部分   再实现这一块
+     */
+    if(mosq->sock != INVALID_SOCKET)
+    {
+        rc = close(mosq->sock);
+        mosq->sock = INVALID_SOCKET;
+    }
+    return rc;
 }

@@ -34,7 +34,6 @@ int client_send_connect_command_mosq(struct mosquitto *mosq, uint16_t keeplive, 
      */
     packet = _mosquitto_calloc(1, sizeof(struct _mosquitto_packet));
     if (!packet) return MOSQ_ERR_NOMEM;
-    
     /* Client Identifier */
     payload_length = (int)(2 + strlen(mosq->id));
     if (mosq->will)
@@ -110,5 +109,5 @@ int client_send_connect_command_mosq(struct mosquitto *mosq, uint16_t keeplive, 
     
     mosq->keepalive = keeplive;
     
-    return _mosq_packet_queue(mosq, packet);
+    return _mosquitto_packet_queue(mosq, packet);
 }

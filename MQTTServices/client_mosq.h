@@ -10,6 +10,10 @@
 #define client_mosq_h
 
 #include <stdio.h>
+#include "mosquitto.h"
 #include "mqtt3_protocol.h"
+
+
+int client_send_connect_command_mosq(struct mosquitto *mosq, uint16_t keeplive, bool clean_session);
 
 #endif /* client_mosq_h */

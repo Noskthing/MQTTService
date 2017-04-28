@@ -109,6 +109,14 @@ struct _mosquitto_packet{
 };
 
 
+struct mosquitto_message_all{
+    struct mosquitto_message_all *next;
+    time_t timestamp;
+    enum mosquitto_msg_direction direction;
+    enum mosquitto_msg_state state;
+    bool dup;
+    struct mosquitto_message msg;
+};
 
 struct mosquitto {
 #ifndef WIN32

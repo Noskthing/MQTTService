@@ -10,9 +10,8 @@
 #define mosquitto_h
 
 #include <stdio.h>
-#include "mosquitto.h"
 #include <stdbool.h>
-#include "mosquitto_internal.h"
+
 
 #ifndef INVALID_SOCKET
 #define INVALID_SOCKET -1
@@ -55,6 +54,7 @@ struct mosquitto;
 
 int mosquitto_reconnect(struct mosquitto *mosq);
 
+struct mosquitto *mosquitto_new(const char *id, bool clean_session ,void *userdata);
 #endif /* mosquitto_h */
 
 

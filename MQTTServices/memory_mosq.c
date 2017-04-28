@@ -7,6 +7,8 @@
 //
 
 #include "memory_mosq.h"
+#include "net_mosq.h"
+#include <assert.h>
 
 void *_mosquitto_calloc(size_t nmemb, size_t size)
 {
@@ -28,7 +30,6 @@ int _mosquitto_packet_alloc(struct _mosquitto_packet *packet)
     uint32_t remaining_length;
     
     if (!packet) return MOSQ_ERR_NOMEM;
-    
     remaining_length = packet->remaining_length;
     packet->payload = NULL;
     packet->remaining_count = 0;
@@ -50,8 +51,7 @@ int _mosquitto_packet_alloc(struct _mosquitto_packet *packet)
     
     packet->packet_length = packet->remaining_length + 1 + packet->remaining_count;
     packet->payload = _mosquitto_malloc(sizeof(uint8_t)*packet->packet_length);
-    if (packet->payload) return MOSQ_ERR_NOMEM;
-    
+    if (!packet->payload) return MOSQ_ERR_NOMEM;
     packet->payload[0] = packet->command;
     for (int i = 0; i < packet->remaining_count; i++)
     {
@@ -60,6 +60,11 @@ int _mosquitto_packet_alloc(struct _mosquitto_packet *packet)
     packet->pos = 1 + packet->remaining_count;
         
     return MOSQ_ERR_SUCCESS;
+}
+
+void _mosquitto_free(void *mem)
+{
+    free(mem);
 }
 
 void _mosquitto_packet_cleanup(struct _mosquitto_packet *packet)
@@ -81,7 +86,123 @@ void _mosquitto_packet_cleanup(struct _mosquitto_packet *packet)
     packet->pos = 0;
 }
 
-void _mosquitto_free(void *mem)
+void _mosquitto_message_cleanup(struct mosquitto_message_all **message)
 {
-    free(mem);
+    struct mosquitto_message_all *msg;
+    
+    if(!message || !*message) return;
+    
+    msg = *message;
+    
+    if(msg->msg.topic) _mosquitto_free(msg->msg.topic);
+    if(msg->msg.payload) _mosquitto_free(msg->msg.payload);
+    _mosquitto_free(msg);
+}
+
+
+void _mosquitto_message_cleanup_all(struct mosquitto *mosq)
+{
+    struct mosquitto_message_all *tmp;
+    
+    assert(mosq);
+    
+    while (mosq->messages)
+    {
+        tmp = mosq->messages->next;
+        _mosquitto_message_cleanup(&mosq->messages);
+        mosq->messages = tmp;
+    }
+}
+
+void _mosquitto_will_clear(struct mosquitto *mosq)
+{
+    if(!mosq->will) return;
+    
+    if(mosq->will->topic)
+    {
+        _mosquitto_free(mosq->will->topic);
+        mosq->will->topic = NULL;
+    }
+    if(mosq->will->payload)
+    {
+        _mosquitto_free(mosq->will->payload);
+        mosq->will->payload = NULL;
+    }
+    _mosquitto_free(mosq->will);
+    mosq->will = NULL;
+}
+
+void _mosquitto_out_packet_cleanup(struct mosquitto *mosq)
+{
+    struct _mosquitto_packet *packet;
+    
+    if(mosq->out_packet && !mosq->current_out_packet)
+    {
+        mosq->current_out_packet = mosq->out_packet;
+        mosq->out_packet = mosq->out_packet->next;
+    }
+    
+    while(mosq->current_out_packet)
+    {
+        packet = mosq->current_out_packet;
+        /* Free data and reset values */
+        mosq->current_out_packet = mosq->out_packet;
+        if(mosq->out_packet)
+        {
+            mosq->out_packet = mosq->out_packet->next;
+        }
+        
+        _mosquitto_packet_cleanup(packet);
+        _mosquitto_free(packet);
+    }
+}
+
+void _mosquitto_destroy(struct mosquitto *mosq)
+{
+    if (!mosq) return;
+    _mosquitto_socket_close(mosq);
+//    _mosquitto_message_cleanup_all(mosq);
+//    _mosquitto_will_clear(mosq);
+    
+    /* Paramter cleanup */
+    if (mosq->address)
+    {
+        _mosquitto_free(mosq->address);
+        mosq->address = NULL;
+    }
+    if(mosq->id)
+    {
+        _mosquitto_free(mosq->id);
+        mosq->id = NULL;
+    }
+    if(mosq->username)
+    {
+        _mosquitto_free(mosq->username);
+        mosq->username = NULL;
+    }
+    if(mosq->password)
+    {
+        _mosquitto_free(mosq->password);
+        mosq->password = NULL;
+    }
+    if(mosq->host)
+    {
+        _mosquitto_free(mosq->host);
+        mosq->host = NULL;
+    }
+    if(mosq->bind_address)
+    {
+        _mosquitto_free(mosq->bind_address);
+        mosq->bind_address = NULL;
+    }
+    
+    _mosquitto_out_packet_cleanup(mosq);
+    _mosquitto_packet_cleanup(&mosq->in_packet);
+}
+
+char *_mosquitto_strdup(const char *s)
+{
+    char *str = strdup(s);
+    
+    return str;
 }
