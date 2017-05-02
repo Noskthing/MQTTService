@@ -10,6 +10,7 @@
 #include "net_mosq.h"
 #include "memory_mosq.h"
 #include "client_mosq.h"
+#include "logger.h"
 
 static int _mosquitto_reconnect(struct mosquitto *mosq, bool blocking);
 static int _mosquitto_loop_rc_handle(struct mosquitto *mosq, int rc);
@@ -139,6 +140,8 @@ int mosquitto_reconnect(struct mosquitto *mosq)
 
 static int _mosquitto_reconnect(struct mosquitto *mosq, bool blocking)
 {
+    LOG_INFO("_mosquitto_reconnect");
+    
     int rc;
     struct _mosquitto_packet *packet = NULL;
     
@@ -208,6 +211,7 @@ int _mosquitto_packet_handle(struct mosquitto *mosq)
         case PUBREL:
             return MOSQ_ERR_SUCCESS;
         case CONNACK:
+            client_receive_connect_ack_mosq(mosq);
             return MOSQ_ERR_SUCCESS;
         case SUBACK:
             return MOSQ_ERR_SUCCESS;
@@ -293,11 +297,11 @@ int _mosquitto_packet_read(struct mosquitto *mosq)
      multiplier = 1
      value = 0
      do
-     encodedByte = 'next byte from stream'
-     value += (encodedByte AND 127) * multiplier
-     multiplier *= 128
-     if (multiplier > 128*128*128)
-     throw Error(Malformed Remaining Length)
+        encodedByte = 'next byte from stream'
+        value += (encodedByte AND 127) * multiplier
+        multiplier *= 128
+        if (multiplier > 128*128*128)
+            throw Error(Malformed Remaining Length)
      while ((encodedByte AND 128) != 0)
      */
     if (!mosq->in_packet.have_remaining)
@@ -334,7 +338,7 @@ int _mosquitto_packet_read(struct mosquitto *mosq)
             }
         }while ((byte & 128) != 0);
         
-        /* If paylod is not null. Readgy to read paylod */
+        /* If paylod is not null. Ready to read paylod */
         if (mosq->in_packet.remaining_length > 0)
         {
             mosq->in_packet.payload = _mosquitto_malloc(mosq->in_packet.remaining_length * sizeof(uint8_t));
@@ -437,6 +441,7 @@ int mosquitto_set_username_pwd(struct mosquitto *mosq, const char *username, con
 
 int mosquitto_loop(struct mosquitto *mosq, int timeout, int max_packets)
 {
+    LOG_INFO("mosquitto_loop");
     if (!mosq || max_packets < 1) return MOSQ_ERR_INVAL;
     if (mosq->sock == INVALID_SOCKET) return MOSQ_ERR_NO_CONN;
     
@@ -519,20 +524,79 @@ static int _mosquitto_loop_rc_handle(struct mosquitto *mosq, int rc)
 
 int mosquitto_loop_forever(struct mosquitto *mosq, int timeout, int max_packets)
 {
+    LOG_INFO("mosquitto_loop_forever");
     int run = 1;
-    int rc;
+    int rc = 0;
     
     if (!mosq) return MOSQ_ERR_INVAL;
     
-    if (mosq->state == mosq_cs_connect_async)
-    {
-        mosquitto_reconnect(mosq);
-    }
+//    if (mosq->state == mosq_cs_connect_async)
+//    {
+//        mosquitto_reconnect(mosq);
+//    }
+  
+    unsigned int reconnect_delay;
+    unsigned int reconnects = 0;
     
+    /*
+     进入loop 调用select检查socket状态
+     当返回不是MOSQ_ERR_SUCCESS的时候检测当前socket状态，从而判断是否重连
+     断连则退出loop
+     否则计算重连间隔
+     再次检测socket状态是否断连
+     重新进入loop
+     */
     while (run)
     {
-        mosquitto_loop(mosq, timeout, max_packets);
+        do
+        {
+            rc = mosquitto_loop(mosq, timeout, max_packets);
+            
+        }while (rc == MOSQ_ERR_SUCCESS);
+        
+        if (errno == EPROTO)
+        {
+            LOG_WARNING("QUIT mosquitto_loop_forever");
+            return rc;
+        }
+        
+        if (mosq->state == mosq_cs_disconnecting)
+        {
+            LOG_WARNING("DISCONNECTING");
+            run = 0;
+        }
+        else
+        {
+            if (mosq->reconnect_delay > 0 && mosq->reconnect_exponential_backoff)
+            {
+                reconnect_delay = mosq->reconnect_delay * reconnects * reconnects;
+            }
+            else
+            {
+                reconnect_delay = mosq->reconnect_delay;
+            }
+            
+            if (reconnect_delay > mosq->reconnect_delay_max)
+            {
+                reconnect_delay = mosq->reconnect_delay_max;
+            }
+            else
+            {
+                reconnects++;
+            }
+            
+            sleep(reconnect_delay);
+            
+            if(mosq->state == mosq_cs_disconnecting){
+                run = 0;
+            }
+            else
+            {
+                LOG_WARNING("DISCONNECTING");
+                mosquitto_reconnect(mosq);
+            }
+        }
     }
     
-    return MOSQ_ERR_SUCCESS;
+    return rc;
 }

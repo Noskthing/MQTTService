@@ -13,6 +13,7 @@
 
 #include <string.h>
 #include <stdbool.h>
+#include "logger.h"
 
 int client_send_connect_command_mosq(struct mosquitto *mosq, uint16_t keeplive, bool clean_session)
 {
@@ -111,3 +112,39 @@ int client_send_connect_command_mosq(struct mosquitto *mosq, uint16_t keeplive, 
     
     return _mosquitto_packet_queue(mosq, packet);
 }
+
+int client_receive_connect_ack_mosq(struct mosquitto *mosq)
+{
+    assert(mosq);
+    if (mosq->in_packet.remaining_length != 2) return MOSQ_ERR_PROTOCOL;
+    
+    LOG_INFO("Client %s received CONNACK",mosq->id);
+    int rc;
+    uint8_t byte;
+    uint8_t result;
+    rc = _mosquitto_read_byte(&mosq->in_packet, &byte); // Reserved byte, unused
+    if (rc) return rc;
+    rc = _mosquitto_read_byte(&mosq->in_packet, &result);
+    if (rc) return rc;
+    if (mosq->on_connect)
+    {
+        mosq->in_callback = true;
+        mosq->on_connect(mosq, mosq->userdata, result);
+        mosq->in_callback = false;
+    }
+    switch (result)
+    {
+        case 0:
+            mosq->state = mosq_cs_connected;
+            return MOSQ_ERR_SUCCESS;
+        case 1:
+        case 2:
+        case 3:
+        case 4:
+        case 5:
+            return MOSQ_ERR_CONN_REFUSED;
+        default:
+            return MOSQ_ERR_PROTOCOL;
+    }
+}
+

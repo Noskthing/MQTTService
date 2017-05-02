@@ -18,7 +18,7 @@
 #define  LOG_ERROR_LEVEL 0x0004
 #define  LOG_ALL_LEVEL 0xFFFF
 
-static unsigned int  flags =   LOG_INFO_LEVEL;
+static unsigned int  flags =   LOG_INFO_LEVEL | LOG_WARNING_LEVEL;
 
 #if  LOG_DEBUG
     #define  C_LOG(flag, level, fmt, ...) \

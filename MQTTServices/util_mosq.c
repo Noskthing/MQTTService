@@ -9,6 +9,7 @@
 #include "util_mosq.h"
 #include <assert.h>
 #include <string.h>
+#include "logger.h"
 
 void _mosquitto_write_byte(struct _mosquitto_packet *packet, uint8_t byte)
 {

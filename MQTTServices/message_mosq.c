@@ -7,7 +7,7 @@
 //
 
 #include "message_mosq.h"
-
+#include "logger.h"
 
 void _mosq_message_reconnect_reset(struct mosquitto *mosq)
 {

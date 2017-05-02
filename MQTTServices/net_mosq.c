@@ -11,6 +11,7 @@
 
 #include <stdlib.h>
 #include <string.h>
+#include "logger.h"
 
 int _mosquitto_try_connect(const char *host, uint16_t port, int *sock, const char *bind_address, bool blocking)
 {
@@ -228,6 +229,17 @@ int _mosquitto_packet_write(struct mosquitto *mosq)
         _mosquitto_packet_cleanup(packet);
         _mosquitto_free(packet);
     }
+    return MOSQ_ERR_SUCCESS;
+}
+
+int _mosquitto_read_byte(struct _mosquitto_packet *packet, uint8_t *byte)
+{
+    assert(packet);
+    if (packet->pos + 1 > packet->remaining_length) return MOSQ_ERR_PROTOCOL;
+    
+    *byte = packet->payload[packet->pos];
+    packet->pos++;
+    
     return MOSQ_ERR_SUCCESS;
 }
 

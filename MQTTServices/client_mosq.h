@@ -15,5 +15,6 @@
 
 
 int client_send_connect_command_mosq(struct mosquitto *mosq, uint16_t keeplive, bool clean_session);
+int client_receive_connect_ack_mosq(struct mosquitto *mosq);
 
 #endif /* client_mosq_h */
