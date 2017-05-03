@@ -600,3 +600,14 @@ int mosquitto_loop_forever(struct mosquitto *mosq, int timeout, int max_packets)
     
     return rc;
 }
+
+int mosquitto_disconnect(struct mosquitto *mosq)
+{
+    if (!mosq) return MOSQ_ERR_INVAL;
+        
+    mosq->state = mosq_cs_disconnecting;
+    
+    if (mosq->sock == INVALID_SOCKET) return MOSQ_ERR_NO_CONN;
+        
+    return client_send_disconnect_command_mosq(mosq);
+}

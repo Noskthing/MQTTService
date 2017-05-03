@@ -22,3 +22,5 @@
 void _mosq_write_string(struct _mosquitto_packet *packet, const char * str, uint16_t length);
 void _mosq_write_byte(struct _mosquitto_packet *packet, uint8_t byte);
 void _mosq_write_uint16(struct _mosquitto_packet *packet, uint16_t word);
+
+int _mosq_read_byte(struct _mosquitto_packet *packet, uint8_t *byte);

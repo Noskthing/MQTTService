@@ -34,6 +34,18 @@ int _mosquitto_packet_alloc(struct _mosquitto_packet *packet)
     packet->payload = NULL;
     packet->remaining_count = 0;
     
+    /*
+     Remaining Length 编码伪码
+     do
+        encodedByte = X MOD 128
+        X = X DIV 128
+        // if there are more data to encode, set the top bit of this byte
+        if ( X > 0 )
+            encodedByte = encodedByte OR 128
+        endif
+        'output' encodedByte
+     while ( X > 0 )
+     */
     while (remaining_length > 0 && packet->remaining_count <= 5)
     {
         bytes = remaining_length % 128;

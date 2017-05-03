@@ -52,14 +52,16 @@ struct mosquitto_message{
 
 struct mosquitto;
 
-
+/* init methods */
 struct mosquitto *mosquitto_new(const char *id, bool clean_session ,void *userdata);
+int mosquitto_set_username_pwd(struct mosquitto *mosq, const char *username, const char *password);
+
+/* connect */
 int mosquitto_reconnect(struct mosquitto *mosq);
 int mosquitto_loop_forever(struct mosquitto *mosq, int timeout, int max_packet);
 
-int mosquitto_set_username_pwd(struct mosquitto *mosq, const char *username, const char *password);
-
-int mosquitto_loop_forever(struct mosquitto *mosq, int timeout, int max_packets);
+/* disconnect */
+int mosquitto_disconnect(struct mosquitto *mosq);
 #endif /* mosquitto_h */
 
 

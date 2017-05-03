@@ -15,6 +15,28 @@
 #include <stdbool.h>
 #include "logger.h"
 
+int _mosq_send_simple_command(struct mosquitto *mosq, uint8_t command)
+{
+    struct _mosquitto_packet *packet = NULL;
+    
+    assert(mosq);
+    packet = _mosquitto_calloc(1, sizeof(struct _mosquitto_packet));
+    if (!packet) return MOSQ_ERR_NOMEM;
+    
+    packet->command = command;
+    packet->remaining_length = 0;
+    
+    int rc;
+    rc = _mosquitto_packet_alloc(packet);
+    if (rc)
+    {
+        _mosquitto_free(packet);
+        return rc;
+    }
+    
+    return _mosquitto_packet_queue(mosq, packet);
+}
+
 int client_send_connect_command_mosq(struct mosquitto *mosq, uint16_t keeplive, bool clean_session)
 {
     struct _mosquitto_packet *packet = NULL;
@@ -122,9 +144,9 @@ int client_receive_connect_ack_mosq(struct mosquitto *mosq)
     int rc;
     uint8_t byte;
     uint8_t result;
-    rc = _mosquitto_read_byte(&mosq->in_packet, &byte); // Reserved byte, unused
+    rc = _mosq_read_byte(&mosq->in_packet, &byte); // Reserved byte, unused
     if (rc) return rc;
-    rc = _mosquitto_read_byte(&mosq->in_packet, &result);
+    rc = _mosq_read_byte(&mosq->in_packet, &result);
     if (rc) return rc;
     if (mosq->on_connect)
     {
@@ -146,5 +168,18 @@ int client_receive_connect_ack_mosq(struct mosquitto *mosq)
         default:
             return MOSQ_ERR_PROTOCOL;
     }
+}
+
+int client_send_disconnect_command_mosq(struct mosquitto *mosq)
+{
+    assert(mosq);
+    
+    LOG_WARNING("Client %s sending DISCONNECT",mosq->id);
+    
+    mosq->state = mosq_cs_disconnecting;
+    
+    if (mosq->sock == INVALID_SOCKET) return MOSQ_ERR_NO_CONN;
+    
+    return _mosq_send_simple_command(mosq, DISCONNECT);
 }
 

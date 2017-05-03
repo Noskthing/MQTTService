@@ -164,6 +164,7 @@ int _mosquitto_socket_connect(struct mosquitto* mosq,const char * host,uint16_t 
 
 int _mosquitto_packet_write(struct mosquitto *mosq)
 {
+    LOG_INFO("_mosquitto_packet_write");
     struct _mosquitto_packet *packet;
     
     if (!mosq) return MOSQ_ERR_INVAL;
@@ -232,22 +233,14 @@ int _mosquitto_packet_write(struct mosquitto *mosq)
     return MOSQ_ERR_SUCCESS;
 }
 
-int _mosquitto_read_byte(struct _mosquitto_packet *packet, uint8_t *byte)
-{
-    assert(packet);
-    if (packet->pos + 1 > packet->remaining_length) return MOSQ_ERR_PROTOCOL;
-    
-    *byte = packet->payload[packet->pos];
-    packet->pos++;
-    
-    return MOSQ_ERR_SUCCESS;
-}
+
 
 int _mosquitto_packet_queue(struct mosquitto *mosq, struct _mosquitto_packet *packet)
 {
     assert(mosq);
     assert(packet);
     
+    LOG_INFO("_mosquitto_packet_queue");
     /* 链表实现了发送队列。设置了两个指针分别指向队列的头尾 */
     packet->next = NULL;
     if (mosq->out_packet)

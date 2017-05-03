@@ -50,3 +50,14 @@ void _mosq_write_byte(struct _mosquitto_packet *packet, uint8_t byte)
     packet->payload[packet->pos] = byte;
     packet->pos ++;
 }
+
+int _mosq_read_byte(struct _mosquitto_packet *packet, uint8_t *byte)
+{
+    assert(packet);
+    if (packet->pos + 1 > packet->remaining_length) return MOSQ_ERR_PROTOCOL;
+    
+    *byte = packet->payload[packet->pos];
+    packet->pos++;
+    
+    return MOSQ_ERR_SUCCESS;
+}
