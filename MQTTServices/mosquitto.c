@@ -11,6 +11,7 @@
 #include "memory_mosq.h"
 #include "client_mosq.h"
 #include "logger.h"
+#include "time_mosq.h"
 
 static int _mosquitto_reconnect(struct mosquitto *mosq, bool blocking);
 static int _mosquitto_loop_rc_handle(struct mosquitto *mosq, int rc);
@@ -199,7 +200,7 @@ int _mosquitto_packet_handle(struct mosquitto *mosq)
         case PINGREQ:
             return MOSQ_ERR_SUCCESS;
         case PINGRESP:
-            return MOSQ_ERR_SUCCESS;
+            return client_receive_connect_ack_mosq(mosq);
         case PUBACK:
             return MOSQ_ERR_SUCCESS;
         case PUBCOMP:
@@ -383,6 +384,7 @@ int _mosquitto_packet_read(struct mosquitto *mosq)
     /* Free data and reset values */
     _mosquitto_packet_cleanup(&mosq->in_packet);
     
+    mosq->last_msg_in = mosquitto_time();
     return rc;
 }
 
@@ -435,6 +437,48 @@ int mosquitto_set_username_pwd(struct mosquitto *mosq, const char *username, con
                 return MOSQ_ERR_NOMEM;
             }
         }
+    }
+    return MOSQ_ERR_SUCCESS;
+}
+
+int mosquitto_loop_misc(struct mosquitto *mosq)
+{
+    if (!mosq) return MOSQ_ERR_INVAL;
+    if (mosq->sock == INVALID_SOCKET) return MOSQ_ERR_NO_CONN;
+
+    time_t now;
+    now = mosquitto_time();
+    
+    _mosquitto_check_keepalive(mosq);
+    if (mosq->last_retry_check + 1 < now)
+    {
+        
+    }
+    
+    /*
+     mosq->ping_t不为0表示正在等待PINGRESQ，now - mosq->ping_t >= mosq->keepalive表示等待时间已经超过我们设置的最大间隔时间
+     所以此时客户端断开连接
+     */
+    int rc;
+    if (mosq->ping_t && now - mosq->ping_t >= mosq->keepalive)
+    {
+        _mosquitto_socket_close(mosq);
+        if (mosq->state == mosq_cs_disconnecting)
+        {
+            rc = MOSQ_ERR_SUCCESS;
+        }
+        else
+        {
+            rc = MOSQ_ERR_NOMEM;
+        }
+        
+        if (mosq->on_disconnect)
+        {
+            mosq->in_callback = true;
+            mosq->on_disconnect(mosq,mosq->userdata,rc);
+            mosq->in_callback = false;
+        }
+        return MOSQ_ERR_CONN_LOST;
     }
     return MOSQ_ERR_SUCCESS;
 }

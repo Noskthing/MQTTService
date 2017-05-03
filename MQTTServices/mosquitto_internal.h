@@ -124,20 +124,31 @@ struct mosquitto {
 #else
     SOCKET sock;
 #endif
+    //监听地址
     char *address;
+    //客户端唯一标识符
     char *id;
+    //用户名
     char *username;
+    //密码
     char *password;
+    //报文最大间隔时间，单位秒
     uint16_t keepalive;
+    //会话的处理方式
     bool clean_session;
+    /* 当前客户端的状态 */
     enum mosquitto_client_state state;
+    /* 最后一条消息接收的时间 */
     time_t last_msg_in;
+    /* 发送最后一条消息的时间 */
     time_t last_msg_out;
+    /* 当ping_t不为0时代表着我们发送了一条PINGREQ等待PINGRES，值为发送PINGREQ的时间 */
     time_t ping_t;
     uint16_t last_mid;
     struct _mosquitto_packet in_packet;
     struct _mosquitto_packet *current_out_packet;
     struct _mosquitto_packet *out_packet;
+    //遗嘱消息
     struct mosquitto_message *will;
 #ifdef WITH_TLS
     SSL *ssl;
@@ -176,12 +187,16 @@ struct mosquitto {
     int db_index;
     struct _mosquitto_packet *out_packet_last;
 #else
+    /*  */
     void *userdata;
+    /* 是否处在回调方法里 */
     bool in_callback;
     unsigned int message_retry;
     time_t last_retry_check;
     struct mosquitto_message_all *messages;
+    /* 连接成功触发的回调 */
     void (*on_connect)(struct mosquitto *, void *userdata, int rc);
+    /* 断开连接出发的回调 */
     void (*on_disconnect)(struct mosquitto *, void *userdata, int rc);
     void (*on_publish)(struct mosquitto *, void *userdata, int mid);
     void (*on_message)(struct mosquitto *, void *userdata, const struct mosquitto_message *message);
