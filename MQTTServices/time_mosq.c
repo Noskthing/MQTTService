@@ -8,6 +8,7 @@
 
 #include "time_mosq.h"
 
+
 #ifdef __APPLE__
 #include <mach/mach.h>
 #include <mach/mach_time.h>
@@ -64,15 +65,26 @@ void _mosquitto_check_keepalive(struct mosquitto *mosq)
     now = mosquitto_time();
     last_msg_out = mosq->last_msg_out;
     last_msg_in = mosq->last_msg_in;
+    /*
+     socket连接存在
+     最后一条发送/接收的消息的时间与现在的间隔超过keepalive
+     */
     if (mosq->sock != INVALID_SOCKET &&
         (now - last_msg_out >= mosq->keepalive || now - last_msg_in >= mosq->keepalive))
     {
+        /*
+         连接状态并且没有未确认的PINGREQ
+         ----> 发送PINGREQ
+         */
         if (mosq->state == mosq_cs_connected && mosq->ping_t == 0)
         {
             mosq->last_msg_in = now;
             mosq->last_msg_out = now;
             client_send_ping_request_mosq(mosq);
         }
+        /*
+         断开socket
+         */
         else
         {
             _mosquitto_socket_close(mosq);

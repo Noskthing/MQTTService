@@ -192,6 +192,7 @@ int _mosquitto_packet_write(struct mosquitto *mosq)
         while (packet->to_process > 0)
         {
             write_length =  write(mosq->sock, &(packet->payload[packet->pos]), packet->to_process);
+            LOG_INFO("write_length is %zd",write_length);
             if (write_length > 0)
             {
                 packet->pos += write_length;
@@ -266,6 +267,7 @@ int _mosquitto_packet_queue(struct mosquitto *mosq, struct _mosquitto_packet *pa
 
 int _mosquitto_socket_close(struct mosquitto *mosq)
 {
+    LOG_INFO("_mosquitto_socket_close");
     int rc = 0;
     assert(mosq);
     /*

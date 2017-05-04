@@ -164,8 +164,10 @@ int client_receive_connect_ack_mosq(struct mosquitto *mosq)
         case 3:
         case 4:
         case 5:
+            mosq->state = mosq_cs_disconnecting;
             return MOSQ_ERR_CONN_REFUSED;
         default:
+            mosq->state = mosq_cs_disconnecting;
             return MOSQ_ERR_PROTOCOL;
     }
 }

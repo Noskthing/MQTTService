@@ -46,7 +46,7 @@ int _mosquitto_packet_alloc(struct _mosquitto_packet *packet)
         'output' encodedByte
      while ( X > 0 )
      */
-    while (remaining_length > 0 && packet->remaining_count <= 5)
+    do
     {
         bytes = remaining_length % 128;
         remaining_length = remaining_length / 128;
@@ -57,8 +57,8 @@ int _mosquitto_packet_alloc(struct _mosquitto_packet *packet)
         }
         remaining_bytes[packet->remaining_count] = bytes;
         packet->remaining_count++;
-    }
-    
+    }while (remaining_length > 0);
+        
     if (packet->remaining_count == 5) return MOSQ_ERR_PAYLOAD_SIZE;
     
     packet->packet_length = packet->remaining_length + 1 + packet->remaining_count;
@@ -172,6 +172,7 @@ void _mosquitto_out_packet_cleanup(struct mosquitto *mosq)
 void _mosquitto_destroy(struct mosquitto *mosq)
 {
     if (!mosq) return;
+
     _mosquitto_socket_close(mosq);
 //    _mosquitto_message_cleanup_all(mosq);
 //    _mosquitto_will_clear(mosq);

@@ -13,6 +13,7 @@
 #include "mosquitto_internal.h"
 #include "net_mosq.h"
 #include "client_mosq.h"
+#include "logger.h"
 
 time_t mosquitto_time();
 

@@ -73,6 +73,8 @@ int mosquitto_init(struct mosquitto *mosq, const char *id, bool clean_session, v
     _mosquitto_packet_cleanup(&mosq->in_packet);
     mosq->out_packet = NULL;
     mosq->current_out_packet = NULL;
+    mosq->last_msg_in = mosquitto_time();
+    mosq->last_msg_out = mosquitto_time();
     mosq->ping_t = 0;
     mosq->last_mid = 0;
     mosq->state = mosq_cs_new;
@@ -144,7 +146,6 @@ static int _mosquitto_reconnect(struct mosquitto *mosq, bool blocking)
     LOG_INFO("_mosquitto_reconnect");
     
     int rc;
-    struct _mosquitto_packet *packet = NULL;
     
     //check paramter
     if (!mosq || !mosq->host || mosq->port <=0) return MOSQ_ERR_INVAL;
@@ -153,44 +154,13 @@ static int _mosquitto_reconnect(struct mosquitto *mosq, bool blocking)
     
     _mosquitto_packet_cleanup(&mosq->in_packet);
     
-    if (mosq->out_packet && !mosq->current_out_packet)
-    {
-        mosq->current_out_packet = mosq->out_packet;
-        mosq->out_packet = mosq->out_packet->next;
-        if (!mosq->out_packet)
-        {
-            mosq->out_packet_last = NULL;
-        }
-    }
+    _mosquitto_out_packet_cleanup(mosq);
     
-    while (mosq->current_out_packet)
-    {
-        packet = mosq->current_out_packet;
-        /* Free data and reset values */
-        if (mosq->out_packet)
-        {
-            mosq->out_packet = mosq->out_packet->next;
-        }
-        else
-        {
-            mosq->out_packet_last = NULL;
-        }
-        
-        _mosquitto_packet_cleanup(packet);
-        _mosquitto_free(packet);
-        
-        mosq->current_out_packet = mosq->out_packet;
-    }
     rc = _mosquitto_socket_connect(mosq, mosq->host, mosq->port, mosq->bind_address, blocking);
-    if (rc)return rc;
+    if (rc) return rc;
     
     return client_send_connect_command_mosq(mosq, mosq->keepalive, mosq->clean_session);
 }
-
-
-
-
-
 
 int _mosquitto_packet_handle(struct mosquitto *mosq)
 {
@@ -200,7 +170,7 @@ int _mosquitto_packet_handle(struct mosquitto *mosq)
         case PINGREQ:
             return MOSQ_ERR_SUCCESS;
         case PINGRESP:
-            return client_receive_connect_ack_mosq(mosq);
+            return client_receive_ping_response_mosq(mosq);
         case PUBACK:
             return MOSQ_ERR_SUCCESS;
         case PUBCOMP:
@@ -212,8 +182,7 @@ int _mosquitto_packet_handle(struct mosquitto *mosq)
         case PUBREL:
             return MOSQ_ERR_SUCCESS;
         case CONNACK:
-            client_receive_connect_ack_mosq(mosq);
-            return MOSQ_ERR_SUCCESS;
+            return client_receive_connect_ack_mosq(mosq);
         case SUBACK:
             return MOSQ_ERR_SUCCESS;
         case UNSUBACK:
@@ -445,7 +414,7 @@ int mosquitto_loop_misc(struct mosquitto *mosq)
 {
     if (!mosq) return MOSQ_ERR_INVAL;
     if (mosq->sock == INVALID_SOCKET) return MOSQ_ERR_NO_CONN;
-
+    
     time_t now;
     now = mosquitto_time();
     
@@ -462,6 +431,7 @@ int mosquitto_loop_misc(struct mosquitto *mosq)
     int rc;
     if (mosq->ping_t && now - mosq->ping_t >= mosq->keepalive)
     {
+        
         _mosquitto_socket_close(mosq);
         if (mosq->state == mosq_cs_disconnecting)
         {
@@ -478,6 +448,7 @@ int mosquitto_loop_misc(struct mosquitto *mosq)
             mosq->on_disconnect(mosq,mosq->userdata,rc);
             mosq->in_callback = false;
         }
+
         return MOSQ_ERR_CONN_LOST;
     }
     return MOSQ_ERR_SUCCESS;
@@ -543,7 +514,8 @@ int mosquitto_loop(struct mosquitto *mosq, int timeout, int max_packets)
             //            }
         }
     }
-    return 0;
+
+    return mosquitto_loop_misc(mosq);
 }
 
 static int _mosquitto_loop_rc_handle(struct mosquitto *mosq, int rc)
@@ -595,7 +567,6 @@ int mosquitto_loop_forever(struct mosquitto *mosq, int timeout, int max_packets)
         do
         {
             rc = mosquitto_loop(mosq, timeout, max_packets);
-            
         }while (rc == MOSQ_ERR_SUCCESS);
         
         if (errno == EPROTO)
