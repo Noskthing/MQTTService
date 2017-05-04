@@ -120,6 +120,7 @@ struct mosquitto_message_all{
 
 struct mosquitto {
 #ifndef WIN32
+    /* socket */
     int sock;
 #else
     SOCKET sock;
@@ -144,9 +145,14 @@ struct mosquitto {
     time_t last_msg_out;
     /* 当ping_t不为0时代表着我们发送了一条PINGREQ等待PINGRES，值为发送PINGREQ的时间 */
     time_t ping_t;
+    /* 可变报头的报文标识符 每次必须分配一个未使用的 */
     uint16_t last_mid;
+    /* 当前接收的数据报 */
     struct _mosquitto_packet in_packet;
+    /* 会有一个发送队列依次发送需要发送的数据报 */
+    /* 指向发送队列的第一个数据报 */
     struct _mosquitto_packet *current_out_packet;
+    /* 指向发送队列的最后一个数据报 */
     struct _mosquitto_packet *out_packet;
     //遗嘱消息
     struct mosquitto_message *will;
@@ -196,10 +202,11 @@ struct mosquitto {
     struct mosquitto_message_all *messages;
     /* 连接成功触发的回调 */
     void (*on_connect)(struct mosquitto *, void *userdata, int rc);
-    /* 断开连接出发的回调 */
+    /* 断开连接触发的回调 */
     void (*on_disconnect)(struct mosquitto *, void *userdata, int rc);
     void (*on_publish)(struct mosquitto *, void *userdata, int mid);
     void (*on_message)(struct mosquitto *, void *userdata, const struct mosquitto_message *message);
+    /* 收到suback触发的回调*/
     void (*on_subscribe)(struct mosquitto *, void *userdata, int mid, int qos_count, const int *granted_qos);
     void (*on_unsubscribe)(struct mosquitto *, void *userdata, int mid);
     void (*on_log)(struct mosquitto *, void *userdata, int level, const char *str);

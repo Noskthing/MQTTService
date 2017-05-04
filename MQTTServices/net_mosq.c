@@ -230,7 +230,9 @@ int _mosquitto_packet_write(struct mosquitto *mosq)
         
         _mosquitto_packet_cleanup(packet);
         _mosquitto_free(packet);
+        mosq->last_msg_out = mosquitto_time();
     }
+    
     return MOSQ_ERR_SUCCESS;
 }
 

@@ -166,6 +166,7 @@ int _mosquitto_packet_handle(struct mosquitto *mosq)
 {
     assert(mosq);
     
+    LOG_INFO("---------receive command");
     switch((mosq->in_packet.command)&0xF0){
         case PINGREQ:
             return MOSQ_ERR_SUCCESS;
@@ -184,7 +185,7 @@ int _mosquitto_packet_handle(struct mosquitto *mosq)
         case CONNACK:
             return client_receive_connect_ack_mosq(mosq);
         case SUBACK:
-            return MOSQ_ERR_SUCCESS;
+            return client_receive_suback_mosq(mosq);
         case UNSUBACK:
             return MOSQ_ERR_SUCCESS;
         default:
@@ -459,7 +460,7 @@ int mosquitto_loop(struct mosquitto *mosq, int timeout, int max_packets)
     LOG_INFO("mosquitto_loop");
     if (!mosq || max_packets < 1) return MOSQ_ERR_INVAL;
     if (mosq->sock == INVALID_SOCKET) return MOSQ_ERR_NO_CONN;
-    
+        
     fd_set readfds, writefds;
     int rc;
     

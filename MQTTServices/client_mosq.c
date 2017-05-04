@@ -191,6 +191,80 @@ int client_receive_ping_response_mosq(struct mosquitto *mosq)
     return MOSQ_ERR_SUCCESS;
 }
 
+int client_send_subscribe_mosq(struct mosquitto *mosq, int *mid, const char *topic, uint8_t topic_qos)
+{
+    assert(mosq);
+    
+    int rc;
+    uint16_t local_mid;
+    struct _mosquitto_packet *packet = NULL;
+    packet = _mosquitto_calloc(1, sizeof(struct _mosquitto_packet));
+    
+    packet->command = SUBSCRIBE | (1 << 1);
+    /* 可变报头 + MSB + LSB + topic.length + 服务质量要求*/
+    packet->remaining_length = 2 + 2 + (uint32_t)strlen(topic) + 1;
+    rc = _mosquitto_packet_alloc(packet);
+    if (rc)
+    {
+        _mosquitto_free(packet);
+        return rc;
+    }
+    
+    /* Variable header */
+    local_mid = _mosquitto_mid_generate(mosq);
+    if (mid) *mid = (int)local_mid;
+    _mosq_write_uint16(packet, local_mid);
+    
+    /* Paylod */
+    _mosq_write_string(packet, topic, strlen(topic));
+    _mosq_write_byte(packet, topic_qos);
+    
+    LOG_INFO("Client %s sending SUBSCRIBE (Mid: %d, Topic: %s, Qos: %d)",mosq->id,local_mid,topic,topic_qos);
+    return _mosquitto_packet_queue(mosq, packet);
+}
+
+int client_receive_suback_mosq(struct mosquitto *mosq)
+{
+    LOG_INFO("Client %s received SUBACK",mosq->id);
+    
+    int rc;
+    uint16_t mid;
+    int *granted_qos;
+    int qos_count;
+    
+    rc = _mosq_read_uint16(&mosq->in_packet, &mid);
+    if (rc) return rc;
+        
+    qos_count = mosq->in_packet.remaining_length - mosq->in_packet.pos;
+    granted_qos = _mosquitto_malloc(qos_count * sizeof(int));
+    if (!granted_qos) return MOSQ_ERR_NOMEM;
+    
+    int i = 0;
+    uint8_t qos;
+    while (mosq->in_packet.pos < mosq->in_packet.remaining_length)
+    {
+        rc = _mosq_read_byte(&mosq->in_packet, &qos);
+        if (rc)
+        {
+            _mosquitto_free(granted_qos);
+            return rc;
+        }
+        granted_qos[i] = qos;
+        i++;
+    }
+    
+    if (mosq->on_subscribe)
+    {
+        mosq->in_callback = true;
+        mosq->on_subscribe(mosq, mosq->userdata, mid, qos_count, granted_qos);
+        mosq->in_callback = false;
+    }
+    
+    _mosquitto_free(granted_qos);
+    
+    return MOSQ_ERR_SUCCESS;
+}
+
 int client_send_disconnect_command_mosq(struct mosquitto *mosq)
 {
     assert(mosq);
