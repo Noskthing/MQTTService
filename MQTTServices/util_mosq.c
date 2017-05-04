@@ -61,3 +61,54 @@ int _mosq_read_byte(struct _mosquitto_packet *packet, uint8_t *byte)
     
     return MOSQ_ERR_SUCCESS;
 }
+
+int _mosq_read_uint16(struct _mosquitto_packet *packet, uint16_t *word)
+{
+    assert(packet);
+    if (packet->pos + 2 > packet->remaining_length) return MOSQ_ERR_PROTOCOL;
+    
+    uint8_t msb,lsb;
+    msb = packet->payload[packet->pos];
+    packet->pos ++;
+    lsb = packet->payload[packet->pos];
+    packet->pos ++;
+    
+    *word = (msb<<8) + lsb;
+    
+    return MOSQ_ERR_SUCCESS;
+}
+
+int _mosq_read_string(struct _mosquitto_packet *packet, char **str)
+{
+    assert(packet);
+    
+    uint16_t len;
+    int rc;
+    rc = _mosq_read_uint16(packet, &len);
+    if (rc) return rc;
+        
+    if (packet->pos + len > packet->remaining_length) return MOSQ_ERR_PROTOCOL;
+        
+    *str = _mosquitto_calloc(len + 1, sizeof(char));
+    if (*str)
+    {
+        memcpy(*str, &(packet->payload[packet->pos]), len);
+        packet->pos += len;
+    }
+    else
+    {
+        return MOSQ_ERR_NOMEM;
+    }
+    
+    return MOSQ_ERR_SUCCESS;
+}
+
+uint16_t _mosquitto_mid_generate(struct mosquitto *mosq)
+{
+    assert(mosq);
+    
+    mosq->last_mid++;
+    if(mosq->last_mid == 0) mosq->last_mid++;
+    
+    return mosq->last_mid;
+}
