@@ -265,6 +265,56 @@ int client_receive_suback_mosq(struct mosquitto *mosq)
     return MOSQ_ERR_SUCCESS;
 }
 
+int client_send_unsubscribe_mosq(struct mosquitto *mosq, int *mid, const char *topic)
+{
+    assert(mosq);
+    
+    uint16_t local_mid;
+    int rc;
+    
+    struct _mosquitto_packet *packet = NULL;
+    packet = _mosquitto_calloc(1, sizeof(struct _mosquitto_packet));
+    
+    packet->command = UNSUBSCRIBE;
+    /* 可变报头 + MSB + LSB +topic */
+    packet->remaining_length = 2 + 2 + (int)strlen(topic);
+    rc = _mosquitto_packet_alloc(packet);
+    if (rc) return MOSQ_ERR_NOMEM;
+    
+    /* Variable header */
+    local_mid = _mosquitto_mid_generate(mosq);
+    if (mid) *mid = (int)local_mid;
+    _mosq_write_uint16(packet, local_mid);
+    
+    /* Paylod */
+    _mosq_write_string(packet, topic, strlen(topic));
+    
+    LOG_INFO("Client %s sending UNSUBSCRIBE (Mid: %d, Topic: %s)",mosq->id,local_mid,topic);
+    return _mosquitto_packet_queue(mosq, packet);
+}
+
+int client_receive_unsubscribe_mmosq(struct mosquitto *mosq)
+{
+    assert(mosq);
+    
+    LOG_INFO("Client %s Receive UNSUBACK",mosq->id);
+    
+    uint16_t mid;
+    int rc;
+    
+    rc = _mosq_read_uint16(&mosq->in_packet, &mid);
+    if (rc) return rc;
+    
+    if (mosq->on_unsubscribe)
+    {
+        mosq->in_callback = true;
+        mosq->on_unsubscribe(mosq, mosq->userdata, mid);
+        mosq->in_callback = false;
+    }
+    
+    return MOSQ_ERR_SUCCESS;
+}
+
 int client_send_disconnect_command_mosq(struct mosquitto *mosq)
 {
     assert(mosq);

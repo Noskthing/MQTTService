@@ -23,6 +23,9 @@ int client_receive_ping_response_mosq(struct mosquitto *mosq);
 #pragma mark sub
 int client_send_subscribe_mosq(struct mosquitto *mosq, int *mid, const char *topic, uint8_t topic_qos);
 int client_receive_suback_mosq(struct mosquitto *mosq);
+#pragma mark unsub
+int client_send_unsubscribe_mosq(struct mosquitto *mosq, int *mid, const char *topic);
+int client_receive_unsubscribe_mmosq(struct mosquitto *mosq);
 #pragma mark disconnect
 int client_send_disconnect_command_mosq(struct mosquitto *mosq);
 #endif /* client_mosq_h */

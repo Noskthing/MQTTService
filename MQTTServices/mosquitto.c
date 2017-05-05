@@ -187,7 +187,7 @@ int _mosquitto_packet_handle(struct mosquitto *mosq)
         case SUBACK:
             return client_receive_suback_mosq(mosq);
         case UNSUBACK:
-            return MOSQ_ERR_SUCCESS;
+            return client_receive_unsubscribe_mmosq(mosq);
         default:
             /* If we don't recognise the command, return an error straight away. */
             printf("unknown command!");
