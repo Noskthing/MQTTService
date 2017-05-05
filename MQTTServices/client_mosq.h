@@ -13,6 +13,7 @@
 #include "mosquitto.h"
 #include "mqtt3_protocol.h"
 #include "time_mosq.h"
+#include "shared_mosq.h"
 
 #pragma mark connect
 int client_send_connect_command_mosq(struct mosquitto *mosq, uint16_t keeplive, bool clean_session);

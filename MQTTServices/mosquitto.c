@@ -133,9 +133,6 @@ struct mosquitto *mosquitto_new(const char *id, bool clean_session ,void *userda
     return mosq;
 }
 
-
-
-
 int mosquitto_reconnect(struct mosquitto *mosq)
 {
     return _mosquitto_reconnect(mosq, true);

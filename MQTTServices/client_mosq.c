@@ -15,27 +15,6 @@
 #include <stdbool.h>
 #include "logger.h"
 
-int _mosq_send_simple_command(struct mosquitto *mosq, uint8_t command)
-{
-    struct _mosquitto_packet *packet = NULL;
-    
-    assert(mosq);
-    packet = _mosquitto_calloc(1, sizeof(struct _mosquitto_packet));
-    if (!packet) return MOSQ_ERR_NOMEM;
-    
-    packet->command = command;
-    packet->remaining_length = 0;
-    
-    int rc;
-    rc = _mosquitto_packet_alloc(packet);
-    if (rc)
-    {
-        _mosquitto_free(packet);
-        return rc;
-    }
-    
-    return _mosquitto_packet_queue(mosq, packet);
-}
 
 int client_send_connect_command_mosq(struct mosquitto *mosq, uint16_t keeplive, bool clean_session)
 {
