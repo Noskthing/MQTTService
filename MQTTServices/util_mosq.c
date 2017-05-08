@@ -62,6 +62,17 @@ int _mosq_read_byte(struct _mosquitto_packet *packet, uint8_t *byte)
     return MOSQ_ERR_SUCCESS;
 }
 
+int _mosq_read_bytes(struct _mosquitto_packet *packet, void *bytes, uint32_t count)
+{
+    assert(packet);
+    if(packet->pos+count > packet->remaining_length) return MOSQ_ERR_PROTOCOL;
+    
+    memcpy(bytes, &(packet->payload[packet->pos]), count);
+    packet->pos += count;
+    
+    return MOSQ_ERR_SUCCESS;
+}
+
 int _mosq_read_uint16(struct _mosquitto_packet *packet, uint16_t *word)
 {
     assert(packet);

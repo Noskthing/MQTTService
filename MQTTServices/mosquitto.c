@@ -12,6 +12,7 @@
 #include "client_mosq.h"
 #include "logger.h"
 #include "time_mosq.h"
+#include "handle_mosq.h"
 
 static int _mosquitto_reconnect(struct mosquitto *mosq, bool blocking);
 static int _mosquitto_loop_rc_handle(struct mosquitto *mosq, int rc);
@@ -174,7 +175,7 @@ int _mosquitto_packet_handle(struct mosquitto *mosq)
         case PUBCOMP:
             return MOSQ_ERR_SUCCESS;
         case PUBLISH:
-            return MOSQ_ERR_SUCCESS;
+            return _mosquitto_handle_publish(mosq);
         case PUBREC:
             return MOSQ_ERR_SUCCESS;
         case PUBREL:
@@ -357,6 +358,7 @@ int _mosquitto_packet_read(struct mosquitto *mosq)
 
 int mosquitto_loop_read(struct mosquitto *mosq,int max_packets)
 {
+    LOG_INFO("mosquitto_loop_read");
     if (max_packets < 1) return MOSQ_ERR_INVAL;
     
     int rc = 0;
@@ -373,6 +375,25 @@ int mosquitto_loop_read(struct mosquitto *mosq,int max_packets)
     return rc;
 }
 
+int mosquitto_loop_write(struct mosquitto *mosq, int max_packets)
+{
+    LOG_INFO("mosquitto_loop_write");
+    
+    int rc = 0;
+    int i;
+    if(max_packets < 1) return MOSQ_ERR_INVAL;
+    
+    max_packets = mosq->queue_len>1?mosq->queue_len:1;
+    
+    for (i = 0; i<max_packets; i++)
+    {
+        rc = _mosquitto_packet_write(mosq);
+        if(rc || errno == EAGAIN || errno == EWOULDBLOCK){
+            return _mosquitto_loop_rc_handle(mosq, rc);
+        }
+    }
+    return rc;
+}
 int mosquitto_set_username_pwd(struct mosquitto *mosq, const char *username, const char *password)
 {
     if (!mosq) return MOSQ_ERR_INVAL;
@@ -410,6 +431,8 @@ int mosquitto_set_username_pwd(struct mosquitto *mosq, const char *username, con
 
 int mosquitto_loop_misc(struct mosquitto *mosq)
 {
+    LOG_INFO("mosquitto_loop_misc");
+    
     if (!mosq) return MOSQ_ERR_INVAL;
     if (mosq->sock == INVALID_SOCKET) return MOSQ_ERR_NO_CONN;
     
@@ -429,7 +452,7 @@ int mosquitto_loop_misc(struct mosquitto *mosq)
     int rc;
     if (mosq->ping_t && now - mosq->ping_t >= mosq->keepalive)
     {
-        
+
         _mosquitto_socket_close(mosq);
         if (mosq->state == mosq_cs_disconnecting)
         {
@@ -464,11 +487,12 @@ int mosquitto_loop(struct mosquitto *mosq, int timeout, int max_packets)
     __DARWIN_FD_ZERO(&readfds);
     __DARWIN_FD_SET(mosq->sock, &readfds);
     __DARWIN_FD_ZERO(&writefds);
+    /* 只有当前有未写入的数据才去检查它的是否可写入，否则不检查 */
     if (mosq->out_packet || mosq->current_out_packet)
     {
         __DARWIN_FD_SET(mosq->sock, &writefds);
     }
-    
+
     struct timespec local_timeout;
     if (timeout >= 0)
     {
@@ -497,6 +521,7 @@ int mosquitto_loop(struct mosquitto *mosq, int timeout, int max_packets)
     }
     else
     {
+        LOG_INFO("fdcount IS %d",fdcount);
         if (__DARWIN_FD_ISSET(mosq->sock, &readfds))
         {
             rc = mosquitto_loop_read(mosq, max_packets);
@@ -505,11 +530,13 @@ int mosquitto_loop(struct mosquitto *mosq, int timeout, int max_packets)
                 return rc;
             }
         }
-        if(FD_ISSET(mosq->sock, &writefds)){
-            //            rc = mosquitto_loop_write(mosq, max_packets);
-            //            if(rc || mosq->sock == INVALID_SOCKET){
-            //                return rc;
-            //            }
+        if(FD_ISSET(mosq->sock, &writefds))
+        {
+            rc = mosquitto_loop_write(mosq, max_packets);
+            if(rc || mosq->sock == INVALID_SOCKET)
+            {
+                return rc;
+            }
         }
     }
 

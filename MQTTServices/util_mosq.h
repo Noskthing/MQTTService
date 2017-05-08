@@ -25,6 +25,7 @@ void _mosq_write_byte(struct _mosquitto_packet *packet, uint8_t byte);
 void _mosq_write_uint16(struct _mosquitto_packet *packet, uint16_t word);
 #pragma mark read
 int _mosq_read_byte(struct _mosquitto_packet *packet, uint8_t *byte);
+int _mosq_read_bytes(struct _mosquitto_packet *packet, void *bytes, uint32_t count);
 int _mosq_read_uint16(struct _mosquitto_packet *packet, uint16_t *word);
 int _mosq_read_string(struct _mosquitto_packet *packet, char **str);
 #pragma mark mid

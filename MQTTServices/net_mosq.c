@@ -256,6 +256,7 @@ int _mosquitto_packet_queue(struct mosquitto *mosq, struct _mosquitto_packet *pa
     }
     mosq->out_packet_last = packet;
     
+   
     if (mosq->in_callback == false && mosq->threaded == false)
     {
         return _mosquitto_packet_write(mosq);
