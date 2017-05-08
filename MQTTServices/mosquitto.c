@@ -14,62 +14,8 @@
 #include "time_mosq.h"
 
 static int _mosquitto_reconnect(struct mosquitto *mosq, bool blocking);
+static int _mosquitto_loop_rc_handle(struct mosquitto *mosq, int rc);
 
-#pragma mark handle
-static int _mosquitto_loop_rc_handle(struct mosquitto *mosq, int rc)
-{
-    if(rc)
-    {
-        _mosquitto_socket_close(mosq);
-        if(mosq->state == mosq_cs_disconnecting)
-        {
-            rc = MOSQ_ERR_SUCCESS;
-        }
-        if(mosq->on_disconnect)
-        {
-            mosq->in_callback = true;
-            mosq->on_disconnect(mosq, mosq->userdata, rc);
-            mosq->in_callback = false;
-        }
-        return rc;
-    }
-    return rc;
-}
-
-int _mosquitto_packet_handle(struct mosquitto *mosq)
-{
-    assert(mosq);
-    
-    LOG_INFO("---------receive command");
-    switch((mosq->in_packet.command)&0xF0){
-        case PINGREQ:
-            return MOSQ_ERR_SUCCESS;
-        case PINGRESP:
-            return client_receive_ping_response_mosq(mosq);
-        case PUBACK:
-            return MOSQ_ERR_SUCCESS;
-        case PUBCOMP:
-            return MOSQ_ERR_SUCCESS;
-        case PUBLISH:
-            return MOSQ_ERR_SUCCESS;
-        case PUBREC:
-            return MOSQ_ERR_SUCCESS;
-        case PUBREL:
-            return MOSQ_ERR_SUCCESS;
-        case CONNACK:
-            return client_receive_connect_ack_mosq(mosq);
-        case SUBACK:
-            return client_receive_suback_mosq(mosq);
-        case UNSUBACK:
-            return client_receive_unsubscribe_mmosq(mosq);
-        default:
-            /* If we don't recognise the command, return an error straight away. */
-            printf("unknown command!");
-            return MOSQ_ERR_PROTOCOL;
-    }
-}
-
-#pragma mark mosquitto init methods
 int mosquitto_init(struct mosquitto *mosq, const char *id, bool clean_session, void *userdata)
 {
     if (!mosq) return MOSQ_ERR_INVAL;
@@ -151,41 +97,6 @@ int mosquitto_init(struct mosquitto *mosq, const char *id, bool clean_session, v
     return MOSQ_ERR_SUCCESS;
 }
 
-int mosquitto_set_username_pwd(struct mosquitto *mosq, const char *username, const char *password)
-{
-    if (!mosq) return MOSQ_ERR_INVAL;
-    
-    /* Free last data */
-    if (mosq->username)
-    {
-        _mosquitto_free(mosq->username);
-        mosq->username = NULL;
-    }
-    if (mosq->password)
-    {
-        _mosquitto_free(mosq->password);
-        mosq->password = NULL;
-    }
-    
-    /* Set new data */
-    if (username)
-    {
-        mosq->username = _mosquitto_strdup(username);
-        if (!mosq->username) return MOSQ_ERR_NOMEM;
-        if (password)
-        {
-            mosq->password = _mosquitto_strdup(password);
-            if (!mosq->password)
-            {
-                _mosquitto_free(mosq->username);
-                mosq->username = NULL;
-                return MOSQ_ERR_NOMEM;
-            }
-        }
-    }
-    return MOSQ_ERR_SUCCESS;
-}
-
 struct mosquitto *mosquitto_new(const char *id, bool clean_session ,void *userdata)
 {
     struct mosquitto *mosq = NULL;
@@ -222,7 +133,6 @@ struct mosquitto *mosquitto_new(const char *id, bool clean_session ,void *userda
     return mosq;
 }
 
-#pragma mark reconnect
 int mosquitto_reconnect(struct mosquitto *mosq)
 {
     return _mosquitto_reconnect(mosq, true);
@@ -249,7 +159,39 @@ static int _mosquitto_reconnect(struct mosquitto *mosq, bool blocking)
     return client_send_connect_command_mosq(mosq, mosq->keepalive, mosq->clean_session);
 }
 
-#pragma mark loop
+int _mosquitto_packet_handle(struct mosquitto *mosq)
+{
+    assert(mosq);
+    
+    LOG_INFO("---------receive command");
+    switch((mosq->in_packet.command)&0xF0){
+        case PINGREQ:
+            return MOSQ_ERR_SUCCESS;
+        case PINGRESP:
+            return client_receive_ping_response_mosq(mosq);
+        case PUBACK:
+            return MOSQ_ERR_SUCCESS;
+        case PUBCOMP:
+            return MOSQ_ERR_SUCCESS;
+        case PUBLISH:
+            return MOSQ_ERR_SUCCESS;
+        case PUBREC:
+            return MOSQ_ERR_SUCCESS;
+        case PUBREL:
+            return MOSQ_ERR_SUCCESS;
+        case CONNACK:
+            return client_receive_connect_ack_mosq(mosq);
+        case SUBACK:
+            return client_receive_suback_mosq(mosq);
+        case UNSUBACK:
+            return client_receive_unsubscribe_mmosq(mosq);
+        default:
+            /* If we don't recognise the command, return an error straight away. */
+            printf("unknown command!");
+            return MOSQ_ERR_PROTOCOL;
+    }
+}
+
 int _mosquitto_packet_read(struct mosquitto *mosq)
 {
     if (!mosq) return  MOSQ_ERR_INVAL;
@@ -431,6 +373,41 @@ int mosquitto_loop_read(struct mosquitto *mosq,int max_packets)
     return rc;
 }
 
+int mosquitto_set_username_pwd(struct mosquitto *mosq, const char *username, const char *password)
+{
+    if (!mosq) return MOSQ_ERR_INVAL;
+    
+    /* Free last data */
+    if (mosq->username)
+    {
+        _mosquitto_free(mosq->username);
+        mosq->username = NULL;
+    }
+    if (mosq->password)
+    {
+        _mosquitto_free(mosq->password);
+        mosq->password = NULL;
+    }
+    
+    /* Set new data */
+    if (username)
+    {
+        mosq->username = _mosquitto_strdup(username);
+        if (!mosq->username) return MOSQ_ERR_NOMEM;
+        if (password)
+        {
+            mosq->password = _mosquitto_strdup(password);
+            if (!mosq->password)
+            {
+                _mosquitto_free(mosq->username);
+                mosq->username = NULL;
+                return MOSQ_ERR_NOMEM;
+            }
+        }
+    }
+    return MOSQ_ERR_SUCCESS;
+}
+
 int mosquitto_loop_misc(struct mosquitto *mosq)
 {
     if (!mosq) return MOSQ_ERR_INVAL;
@@ -539,6 +516,25 @@ int mosquitto_loop(struct mosquitto *mosq, int timeout, int max_packets)
     return mosquitto_loop_misc(mosq);
 }
 
+static int _mosquitto_loop_rc_handle(struct mosquitto *mosq, int rc)
+{
+    if(rc)
+    {
+        _mosquitto_socket_close(mosq);
+        if(mosq->state == mosq_cs_disconnecting)
+        {
+            rc = MOSQ_ERR_SUCCESS;
+        }
+        if(mosq->on_disconnect)
+        {
+            mosq->in_callback = true;
+            mosq->on_disconnect(mosq, mosq->userdata, rc);
+            mosq->in_callback = false;
+        }
+        return rc;
+    }
+    return rc;
+}
 
 int mosquitto_loop_forever(struct mosquitto *mosq, int timeout, int max_packets)
 {
@@ -618,7 +614,6 @@ int mosquitto_loop_forever(struct mosquitto *mosq, int timeout, int max_packets)
     return rc;
 }
 
-#pragma mark disconnect
 int mosquitto_disconnect(struct mosquitto *mosq)
 {
     if (!mosq) return MOSQ_ERR_INVAL;
