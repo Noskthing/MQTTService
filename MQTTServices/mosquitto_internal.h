@@ -150,9 +150,9 @@ struct mosquitto {
     /* 当前接收的数据报 */
     struct _mosquitto_packet in_packet;
     /* 会有一个发送队列依次发送需要发送的数据报 */
-    /* 指向发送队列的第一个数据报 */
+    /* 当前需要发送的数据报 */
     struct _mosquitto_packet *current_out_packet;
-    /* 指向发送队列的最后一个数据报 */
+    /* 指向发送队列的第一个数据报 */
     struct _mosquitto_packet *out_packet;
     //遗嘱消息
     struct mosquitto_message *will;
@@ -195,15 +195,17 @@ struct mosquitto {
 #else
     /*  */
     void *userdata;
-    /* 是否处在回调方法里 */
+    /* 是否处在回调方法里 在写入数据的时候为避免死锁会跳过等待下一个轮循再写入 */
     bool in_callback;
     unsigned int message_retry;
     time_t last_retry_check;
+    /* 指向等待回复messages队列的最后一条message */
     struct mosquitto_message_all *messages;
     /* 连接成功触发的回调 */
     void (*on_connect)(struct mosquitto *, void *userdata, int rc);
     /* 断开连接触发的回调 */
     void (*on_disconnect)(struct mosquitto *, void *userdata, int rc);
+    /* 发布消息触发的回调 */
     void (*on_publish)(struct mosquitto *, void *userdata, int mid);
     void (*on_message)(struct mosquitto *, void *userdata, const struct mosquitto_message *message);
     /* 收到suback触发的回调*/
@@ -214,14 +216,29 @@ struct mosquitto {
     char *host;
     int port;
     int queue_len;
+    // 监听地址
     char *bind_address;
     unsigned int reconnect_delay;
     unsigned int reconnect_delay_max;
     bool reconnect_exponential_backoff;
+    /* 当前是否是多线程 */
     bool threaded;
+    /* 指向发送队列的最后一个数据报 */
     struct _mosquitto_packet *out_packet_last;
+    /* 指向等待回复messages队列的最后一条message */
     struct mosquitto_message_all *messages_last;
+    /* 
+     Qos > 0 等待回复的message
+     Qos = 1时，mosq_md_out
+     Qos = 2时，mosq_md_in
+     */
     int inflight_messages;
+    /*
+     最大处于等待回复的message数量
+     0 代表不限制数量
+     当达到限制的时候，会先将message状态置为mosq_ms_invalid
+     等待一条消息被确认后发送
+     */
     int max_inflight_messages;
 #endif
 };

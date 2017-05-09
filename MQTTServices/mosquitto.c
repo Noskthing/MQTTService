@@ -171,9 +171,9 @@ int _mosquitto_packet_handle(struct mosquitto *mosq)
         case PINGRESP:
             return client_receive_ping_response_mosq(mosq);
         case PUBACK:
-            return MOSQ_ERR_SUCCESS;
+            return _mosquitto_handle_puback(mosq, "PUBACK");
         case PUBCOMP:
-            return MOSQ_ERR_SUCCESS;
+            return _mosquitto_handle_puback(mosq, "PUBCOMP");
         case PUBLISH:
             return _mosquitto_handle_publish(mosq);
         case PUBREC:
@@ -188,7 +188,7 @@ int _mosquitto_packet_handle(struct mosquitto *mosq)
             return client_receive_unsubscribe_mmosq(mosq);
         default:
             /* If we don't recognise the command, return an error straight away. */
-            printf("unknown command!");
+            LOG_INFO("unknown command!");
             return MOSQ_ERR_PROTOCOL;
     }
 }
