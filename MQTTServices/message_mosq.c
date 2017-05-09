@@ -155,5 +155,5 @@ int _mosquitto_message_update(struct mosquitto *mosq, uint16_t mid, enum mosquit
         }
         message = message->next;
     }
-    return message;
+    return MOSQ_ERR_SUCCESS;
 }
