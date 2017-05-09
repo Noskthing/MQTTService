@@ -43,7 +43,7 @@ int _mosquitto_send_real_publish(struct mosquitto *mosq, uint16_t mid, const cha
     packetlen = 2 + (int)strlen(topic) + payloadlen;
     if (qos > 0) packetlen += 2;
     packet = _mosquitto_calloc(1, sizeof(struct mosquitto));
-    if (packet) return MOSQ_ERR_NOMEM;
+    if (!packet) return MOSQ_ERR_NOMEM;
     
     packet->mid = mid;
     packet->command = PUBLISH | ((dup&0x1)<<3) | (qos<<1) | retain;
@@ -56,7 +56,7 @@ int _mosquitto_send_real_publish(struct mosquitto *mosq, uint16_t mid, const cha
     if (qos > 0) _mosq_write_uint16(packet, mid);
     
     /* Paylod */
-    if (payloadlen) _mosq_write_string(packet, payload, payloadlen);
+    if (payloadlen) _mosquitto_write_bytes(packet, payload, payloadlen);
     
     return _mosquitto_packet_queue(mosq, packet);
 }
