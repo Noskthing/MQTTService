@@ -31,7 +31,8 @@ int _mosquitto_handle_publish(struct mosquitto *mosq)
     
     /* 可变报头 主题名*/
     rc = _mosq_read_string(&mosq->in_packet, &message->msg.topic);
-    if (rc) {
+    if (rc)
+    {
         _mosquitto_message_cleanup(&message);
         return rc;
     }
@@ -150,5 +151,39 @@ int _mosquitto_handle_pubrec(struct mosquitto *mosq)
     rc = _mosquitto_send_pubrel(mosq, mid, false);
     if(rc) return rc;
     
+    return MOSQ_ERR_SUCCESS;
+}
+
+int _mosquitto_handle_pubrel(struct mosquitto *mosq)
+{
+    assert(mosq);
+    
+    uint16_t mid;
+    int rc;
+    struct mosquitto_message_all *message = NULL;
+    
+    rc = _mosq_read_uint16(&mosq->in_packet, &mid);
+    if (rc) return rc;
+    
+    LOG_INFO("Client %s received PUBREL (Mid: %d)", mosq->id, mid);
+    
+    /*
+     只有成功从队列中移除的message才会触发回调
+     这样是避免同样的message多次触发回调
+     */
+    if (!_mosquitto_message_remove(mosq, mid, mosq_md_in, &message))
+    {
+        if (mosq->on_message)
+        {
+            mosq->in_callback = true;
+            mosq->on_message(mosq, mosq->userdata, &message->msg);
+            mosq->in_callback = false;
+        }
+        _mosquitto_message_cleanup(&message);
+    }
+    
+    rc = _mosquitto_send_pubcomp(mosq, mid);
+    if (rc) return rc;
+        
     return MOSQ_ERR_SUCCESS;
 }

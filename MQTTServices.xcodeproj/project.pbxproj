@@ -69,11 +69,19 @@
 /* End PBXFrameworksBuildPhase section */
 
 /* Begin PBXGroup section */
+		6D2ED5D21EC2D82000659DF6 /* Frameworks */ = {
+			isa = PBXGroup;
+			children = (
+			);
+			name = Frameworks;
+			sourceTree = "<group>";
+		};
 		6D7796CF1EAEE64200AD5754 = {
 			isa = PBXGroup;
 			children = (
 				6D7796DA1EAEE64200AD5754 /* MQTTServices */,
 				6D7796D91EAEE64200AD5754 /* Products */,
+				6D2ED5D21EC2D82000659DF6 /* Frameworks */,
 			);
 			sourceTree = "<group>";
 		};
@@ -126,8 +134,8 @@
 				6D2F81471EC1D3C000D7EAE1 /* handle_mosq.h */,
 				6D7796F71EAEE93C00AD5754 /* net_mosq.c */,
 				6D7796F81EAEE93C00AD5754 /* net_mosq.h */,
-				6D7948461EB21267005BDAC0 /* client_mosq.h */,
 				6D7796FB1EAF15A300AD5754 /* client_mosq.c */,
+				6D7948461EB21267005BDAC0 /* client_mosq.h */,
 				6D2F81431EC1D38E00D7EAE1 /* shared_mosq.c */,
 				6D2F81441EC1D38E00D7EAE1 /* shared_mosq.h */,
 				6D7797021EAF320100AD5754 /* util_mosq.c */,
@@ -288,7 +296,9 @@
 				GCC_WARN_UNINITIALIZED_AUTOS = YES_AGGRESSIVE;
 				GCC_WARN_UNUSED_FUNCTION = YES;
 				GCC_WARN_UNUSED_VARIABLE = YES;
+				HEADER_SEARCH_PATHS = "";
 				IPHONEOS_DEPLOYMENT_TARGET = 10.3;
+				LIBRARY_SEARCH_PATHS = "";
 				MTL_ENABLE_DEBUG_INFO = YES;
 				ONLY_ACTIVE_ARCH = YES;
 				SDKROOT = iphoneos;
@@ -331,7 +341,9 @@
 				GCC_WARN_UNINITIALIZED_AUTOS = YES_AGGRESSIVE;
 				GCC_WARN_UNUSED_FUNCTION = YES;
 				GCC_WARN_UNUSED_VARIABLE = YES;
+				HEADER_SEARCH_PATHS = "";
 				IPHONEOS_DEPLOYMENT_TARGET = 10.3;
+				LIBRARY_SEARCH_PATHS = "";
 				MTL_ENABLE_DEBUG_INFO = NO;
 				SDKROOT = iphoneos;
 				TARGETED_DEVICE_FAMILY = "1,2";
@@ -342,10 +354,17 @@
 		6D7796F01EAEE64200AD5754 /* Debug */ = {
 			isa = XCBuildConfiguration;
 			buildSettings = {
+				ALWAYS_SEARCH_USER_PATHS = NO;
 				ASSETCATALOG_COMPILER_APPICON_NAME = AppIcon;
 				DEVELOPMENT_TEAM = WR4SY93GA4;
+				HEADER_SEARCH_PATHS = "";
 				INFOPLIST_FILE = MQTTServices/Info.plist;
 				LD_RUNPATH_SEARCH_PATHS = "$(inherited) @executable_path/Frameworks";
+				LIBRARY_SEARCH_PATHS = (
+					"$(inherited)",
+					"$(PROJECT_DIR)/MQTTServices",
+					"$(PROJECT_DIR)",
+				);
 				PRODUCT_BUNDLE_IDENTIFIER = com.leebowen.MQTTServices;
 				PRODUCT_NAME = "$(TARGET_NAME)";
 			};
@@ -354,10 +373,17 @@
 		6D7796F11EAEE64200AD5754 /* Release */ = {
 			isa = XCBuildConfiguration;
 			buildSettings = {
+				ALWAYS_SEARCH_USER_PATHS = NO;
 				ASSETCATALOG_COMPILER_APPICON_NAME = AppIcon;
 				DEVELOPMENT_TEAM = WR4SY93GA4;
+				HEADER_SEARCH_PATHS = "";
 				INFOPLIST_FILE = MQTTServices/Info.plist;
 				LD_RUNPATH_SEARCH_PATHS = "$(inherited) @executable_path/Frameworks";
+				LIBRARY_SEARCH_PATHS = (
+					"$(inherited)",
+					"$(PROJECT_DIR)/MQTTServices",
+					"$(PROJECT_DIR)",
+				);
 				PRODUCT_BUNDLE_IDENTIFIER = com.leebowen.MQTTServices;
 				PRODUCT_NAME = "$(TARGET_NAME)";
 			};

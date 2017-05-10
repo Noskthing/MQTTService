@@ -144,7 +144,7 @@ void _mosquitto_will_clear(struct mosquitto *mosq)
     mosq->will = NULL;
 }
 
-void _mosquitto_out_packet_cleanup(struct mosquitto *mosq)
+void _mosquitto_out_packet_cleanup_all(struct mosquitto *mosq)
 {
     struct _mosquitto_packet *packet;
     
@@ -209,7 +209,7 @@ void _mosquitto_destroy(struct mosquitto *mosq)
         mosq->bind_address = NULL;
     }
     
-    _mosquitto_out_packet_cleanup(mosq);
+    _mosquitto_out_packet_cleanup_all(mosq);
     _mosquitto_packet_cleanup(&mosq->in_packet);
 }
 

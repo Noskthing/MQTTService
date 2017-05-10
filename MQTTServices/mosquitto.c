@@ -152,7 +152,7 @@ static int _mosquitto_reconnect(struct mosquitto *mosq, bool blocking)
     
     _mosquitto_packet_cleanup(&mosq->in_packet);
     
-    _mosquitto_out_packet_cleanup(mosq);
+    _mosquitto_out_packet_cleanup_all(mosq);
     
     rc = _mosquitto_socket_connect(mosq, mosq->host, mosq->port, mosq->bind_address, blocking);
     if (rc) return rc;
@@ -177,9 +177,9 @@ int _mosquitto_packet_handle(struct mosquitto *mosq)
         case PUBLISH:
             return _mosquitto_handle_publish(mosq);
         case PUBREC:
-            return MOSQ_ERR_SUCCESS;
+            return _mosquitto_handle_pubrec(mosq);
         case PUBREL:
-            return MOSQ_ERR_SUCCESS;
+            return _mosquitto_handle_pubrel(mosq);
         case CONNACK:
             return client_receive_connect_ack_mosq(mosq);
         case SUBACK:
