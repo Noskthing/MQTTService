@@ -7,6 +7,7 @@
 	objects = {
 
 /* Begin PBXBuildFile section */
+		6D2ED62C1EC2E7E700659DF6 /* will_mosq.c in Sources */ = {isa = PBXBuildFile; fileRef = 6D2ED62A1EC2E7E700659DF6 /* will_mosq.c */; };
 		6D2F813F1EC1D2A900D7EAE1 /* time_mosq.c in Sources */ = {isa = PBXBuildFile; fileRef = 6D2F813D1EC1D2A900D7EAE1 /* time_mosq.c */; };
 		6D2F81421EC1D35400D7EAE1 /* message_mosq.c in Sources */ = {isa = PBXBuildFile; fileRef = 6D2F81401EC1D35400D7EAE1 /* message_mosq.c */; };
 		6D2F81451EC1D38E00D7EAE1 /* shared_mosq.c in Sources */ = {isa = PBXBuildFile; fileRef = 6D2F81431EC1D38E00D7EAE1 /* shared_mosq.c */; };
@@ -25,6 +26,8 @@
 /* End PBXBuildFile section */
 
 /* Begin PBXFileReference section */
+		6D2ED62A1EC2E7E700659DF6 /* will_mosq.c */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.c; path = will_mosq.c; sourceTree = "<group>"; };
+		6D2ED62B1EC2E7E700659DF6 /* will_mosq.h */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.h; path = will_mosq.h; sourceTree = "<group>"; };
 		6D2F813D1EC1D2A900D7EAE1 /* time_mosq.c */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.c; path = time_mosq.c; sourceTree = "<group>"; };
 		6D2F813E1EC1D2A900D7EAE1 /* time_mosq.h */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.h; path = time_mosq.h; sourceTree = "<group>"; };
 		6D2F81401EC1D35400D7EAE1 /* message_mosq.c */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.c; path = message_mosq.c; sourceTree = "<group>"; };
@@ -142,6 +145,8 @@
 				6D7797031EAF320100AD5754 /* util_mosq.h */,
 				6D2F813D1EC1D2A900D7EAE1 /* time_mosq.c */,
 				6D2F813E1EC1D2A900D7EAE1 /* time_mosq.h */,
+				6D2ED62A1EC2E7E700659DF6 /* will_mosq.c */,
+				6D2ED62B1EC2E7E700659DF6 /* will_mosq.h */,
 			);
 			name = MQTT;
 			sourceTree = "<group>";
@@ -222,6 +227,7 @@
 				6D2F81481EC1D3C000D7EAE1 /* handle_mosq.c in Sources */,
 				6D2F81451EC1D38E00D7EAE1 /* shared_mosq.c in Sources */,
 				6D7797041EAF320100AD5754 /* util_mosq.c in Sources */,
+				6D2ED62C1EC2E7E700659DF6 /* will_mosq.c in Sources */,
 				6D7796F91EAEE93C00AD5754 /* net_mosq.c in Sources */,
 				6D7796E31EAEE64200AD5754 /* ViewController.m in Sources */,
 				6D7796F51EAEE75A00AD5754 /* mosquitto.c in Sources */,

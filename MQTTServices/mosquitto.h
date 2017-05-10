@@ -62,6 +62,9 @@ int mosquitto_loop_forever(struct mosquitto *mosq, int timeout, int max_packet);
 
 #pragma mark disconnect 
 int mosquitto_disconnect(struct mosquitto *mosq);
+
+#pragma mark publish
+int mosquitto_publish(struct mosquitto *mosq, int *mid, const char *topic, int paylodlen, const char *paylod, int qos, bool retain);
 #endif /* mosquitto_h */
 
 

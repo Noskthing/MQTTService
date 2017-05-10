@@ -84,6 +84,24 @@ int _mosquitto_send_command_with_mid(struct mosquitto *mosq, uint8_t command, ui
     return _mosquitto_packet_queue(mosq, packet);
 }
 
+int _mosquitto_send_pingreq(struct mosquitto *mosq)
+{
+    LOG_INFO("Client %s sending PINGREQ",mosq->id);
+    
+    int rc;
+    rc = _mosq_send_simple_command(mosq, PINGREQ);
+    if (rc == MOSQ_ERR_SUCCESS) mosq->ping_t = mosquitto_time();
+    
+    return rc;
+}
+
+int _mosquitto_send_pingresp(struct mosquitto *mosq)
+{
+    LOG_INFO("Client %s sending PINGRESP", mosq->id);
+
+    return _mosq_send_simple_command(mosq, PINGRESP);
+}
+
 int _mosq_send_publish(struct mosquitto *mosq, uint16_t mid, const char *topic, uint32_t payloadlen, const void *payload, int qos, bool retain, bool dup)
 {
     assert(mosq);

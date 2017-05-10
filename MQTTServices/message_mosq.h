@@ -14,8 +14,9 @@
 #include "shared_mosq.h"
 #include "time_mosq.h"
 
-void _mosq_message_reconnect_reset(struct mosquitto *mosq);
+void _mosq_messages_reconnect_reset(struct mosquitto *mosq);
 void _mosquitto_message_queue(struct mosquitto *mosq, struct mosquitto_message_all *message, bool doinc);
+void _mosquitto_messages_retry_check(struct mosquitto *mosq);
 
 int _mosquitto_message_delete(struct mosquitto *mosq, uint16_t mid, enum mosquitto_msg_direction dir);
 int _mosquitto_message_update(struct mosquitto *mosq, uint16_t mid, enum mosquitto_msg_direction dir, enum mosquitto_msg_state state);

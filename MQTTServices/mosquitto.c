@@ -154,6 +154,8 @@ static int _mosquitto_reconnect(struct mosquitto *mosq, bool blocking)
     
     _mosquitto_out_packet_cleanup_all(mosq);
     
+    _mosq_messages_reconnect_reset(mosq);
+    
     rc = _mosquitto_socket_connect(mosq, mosq->host, mosq->port, mosq->bind_address, blocking);
     if (rc) return rc;
     
@@ -167,7 +169,7 @@ int _mosquitto_packet_handle(struct mosquitto *mosq)
     LOG_INFO("---------receive command");
     switch((mosq->in_packet.command)&0xF0){
         case PINGREQ:
-            return MOSQ_ERR_SUCCESS;
+            return _mosquitto_handle_pingreq(mosq);
         case PINGRESP:
             return client_receive_ping_response_mosq(mosq);
         case PUBACK:
@@ -442,7 +444,8 @@ int mosquitto_loop_misc(struct mosquitto *mosq)
     _mosquitto_check_keepalive(mosq);
     if (mosq->last_retry_check + 1 < now)
     {
-        
+        _mosquitto_messages_retry_check(mosq);
+        mosq->last_retry_check = now;
     }
     
     /*

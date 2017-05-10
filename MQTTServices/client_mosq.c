@@ -153,13 +153,7 @@ int client_receive_connect_ack_mosq(struct mosquitto *mosq)
 
 int client_send_ping_request_mosq(struct mosquitto *mosq)
 {
-    LOG_INFO("Client %s sending PINGREQ",mosq->id);
-    
-    int rc;
-    rc = _mosq_send_simple_command(mosq, PINGREQ);
-    if (rc == MOSQ_ERR_SUCCESS) mosq->ping_t = mosquitto_time();
-
-    return rc;
+    return _mosquitto_send_pingreq(mosq);
 }
 
 int client_receive_ping_response_mosq(struct mosquitto *mosq)

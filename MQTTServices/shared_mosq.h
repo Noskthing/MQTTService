@@ -23,6 +23,10 @@ int _mosquitto_send_real_publish(struct mosquitto *mosq, uint16_t mid, const cha
 /* For PUBACK, PUBCOMP, PUBREC, and PUBREL */
 int _mosquitto_send_command_with_mid(struct mosquitto *mosq, uint8_t command, uint16_t mid, bool dup);
 
+#pragma mark PING
+int _mosquitto_send_pingreq(struct mosquitto *mosq);
+int _mosquitto_send_pingresp(struct mosquitto *mosq);
+
 #pragma mark publish
 int _mosq_send_publish(struct mosquitto *mosq, uint16_t mid, const char *topic, uint32_t payloadlen, const void *payload, int qos, bool retain, bool dup);
 /* Qos 1 */

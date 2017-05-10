@@ -95,15 +95,25 @@ enum mosquitto_client_state {
 };
 
 struct _mosquitto_packet{
+    /* 报文类型 */
     uint8_t command;
+    /* 是否计算过剩余长度 */
     uint8_t have_remaining;
+    /* 固定报头中标示剩余长度的数值的位数*/
     uint8_t remaining_count;
+    /* 报文标识符 */
     uint16_t mid;
+    /* 辅助读取和写入剩余长度的参数 */
     uint32_t remaining_mult;
+    /* 剩余长度 （可变报头和有效负载）*/
     uint32_t remaining_length;
+    /* 包的总长度（包括固定报头） */
     uint32_t packet_length;
+    /* packet读写操作时，记录剩余未完成部分的长度 */
     uint32_t to_process;
+    /* 当前操作的位置 */
     uint32_t pos;
+    /* 有效负载 */
     uint8_t *payload;
     struct _mosquitto_packet *next;
 };
@@ -111,10 +121,15 @@ struct _mosquitto_packet{
 
 struct mosquitto_message_all{
     struct mosquitto_message_all *next;
+    /* 当前message发送的时间戳 */
     time_t timestamp;
+    /* 标识该条message是接收还是发送 */
     enum mosquitto_msg_direction direction;
+    /* message当前的状态 */
     enum mosquitto_msg_state state;
+    /* 重发标志位 */
     bool dup;
+    /* message实体 */
     struct mosquitto_message msg;
 };
 
@@ -197,7 +212,9 @@ struct mosquitto {
     void *userdata;
     /* 是否处在回调方法里 在写入数据的时候为避免死锁会跳过等待下一个轮循再写入 */
     bool in_callback;
+    /* message等待返回的最大时间间隔 */
     unsigned int message_retry;
+    /* 最后一次检查retry_check的时间 */
     time_t last_retry_check;
     /* 指向等待回复messages队列的最后一条message */
     struct mosquitto_message_all *messages;

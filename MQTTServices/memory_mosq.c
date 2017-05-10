@@ -9,6 +9,7 @@
 #include "memory_mosq.h"
 #include "net_mosq.h"
 #include <assert.h>
+#include "will_mosq.h"
 
 void *_mosquitto_calloc(size_t nmemb, size_t size)
 {
@@ -126,24 +127,6 @@ void _mosquitto_message_cleanup_all(struct mosquitto *mosq)
     }
 }
 
-void _mosquitto_will_clear(struct mosquitto *mosq)
-{
-    if(!mosq->will) return;
-    
-    if(mosq->will->topic)
-    {
-        _mosquitto_free(mosq->will->topic);
-        mosq->will->topic = NULL;
-    }
-    if(mosq->will->payload)
-    {
-        _mosquitto_free(mosq->will->payload);
-        mosq->will->payload = NULL;
-    }
-    _mosquitto_free(mosq->will);
-    mosq->will = NULL;
-}
-
 void _mosquitto_out_packet_cleanup_all(struct mosquitto *mosq)
 {
     struct _mosquitto_packet *packet;
@@ -174,8 +157,8 @@ void _mosquitto_destroy(struct mosquitto *mosq)
     if (!mosq) return;
 
     _mosquitto_socket_close(mosq);
-//    _mosquitto_message_cleanup_all(mosq);
-//    _mosquitto_will_clear(mosq);
+    _mosquitto_message_cleanup_all(mosq);
+    _mosquitto_will_clear(mosq);
     
     /* Paramter cleanup */
     if (mosq->address)

@@ -10,6 +10,15 @@
 #include <assert.h>
 #include <string.h>
 
+int _mosquitto_handle_pingreq(struct mosquitto *mosq)
+{
+    assert(mosq);
+
+    LOG_INFO("Client %s received PINGREQ", mosq->id);
+    
+    return _mosquitto_send_pingresp(mosq);
+}
+
 int _mosquitto_handle_publish(struct mosquitto *mosq)
 {
     uint8_t header;
@@ -77,6 +86,7 @@ int _mosquitto_handle_publish(struct mosquitto *mosq)
              message->msg.mid, message->msg.payload,
              (long)message->msg.topic);
     
+    message->timestamp = mosquitto_time();
     switch (message->msg.qos)
     {
         case 0:
