@@ -235,8 +235,11 @@ struct mosquitto {
     int queue_len;
     // 监听地址
     char *bind_address;
+    /* 延迟重连的时间  实际会根据不同逻辑在这个基础上计算出新的延迟时间 */
     unsigned int reconnect_delay;
+    /* 延迟重连的最大时间间隔 */
     unsigned int reconnect_delay_max;
+    /* 延迟重连的时间是否退避 */
     bool reconnect_exponential_backoff;
     /* 当前是否是多线程 */
     bool threaded;

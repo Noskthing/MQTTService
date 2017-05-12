@@ -256,3 +256,30 @@ int _mosquitto_message_update(struct mosquitto *mosq, uint16_t mid, enum mosquit
     }
     return MOSQ_ERR_SUCCESS;
 }
+
+void _mosquitto_message_cleanup_all(struct mosquitto *mosq)
+{
+    struct mosquitto_message_all *tmp;
+    
+    assert(mosq);
+    
+    while (mosq->messages)
+    {
+        tmp = mosq->messages->next;
+        _mosquitto_message_cleanup(&mosq->messages);
+        mosq->messages = tmp;
+    }
+}
+
+void _mosquitto_message_cleanup(struct mosquitto_message_all **message)
+{
+    struct mosquitto_message_all *msg;
+    
+    if(!message || !*message) return;
+    
+    msg = *message;
+    
+    if(msg->msg.topic) _mosquitto_free(msg->msg.topic);
+    if(msg->msg.payload) _mosquitto_free(msg->msg.payload);
+    _mosquitto_free(msg);
+}

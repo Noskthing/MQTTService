@@ -20,16 +20,24 @@
 /* Error values */
 enum mosq_err_t {
     MOSQ_ERR_CONN_PENDING = -1,
+    /* 执行成功 */
     MOSQ_ERR_SUCCESS = 0,
+    /* 分配内存出现了问题 */
     MOSQ_ERR_NOMEM = 1,
+    /* 当前内容与协议规定出现冲突 */
     MOSQ_ERR_PROTOCOL = 2,
+    /* 当前环境是非法的（一般是mosq为空）*/
     MOSQ_ERR_INVAL = 3,
+    /* 当前处于未连接状态 */
     MOSQ_ERR_NO_CONN = 4,
+    /* 连接被拒绝 */
     MOSQ_ERR_CONN_REFUSED = 5,
+    /* 未发现目标对象 */
     MOSQ_ERR_NOT_FOUND = 6,
     MOSQ_ERR_CONN_LOST = 7,
     MOSQ_ERR_TLS = 8,
     MOSQ_ERR_PAYLOAD_SIZE = 9,
+    /* 不支持当前特性 */
     MOSQ_ERR_NOT_SUPPORTED = 10,
     MOSQ_ERR_AUTH = 11,
     MOSQ_ERR_ACL_DENIED = 12,
@@ -42,11 +50,17 @@ enum mosq_err_t {
 #define MOSQ_MQTT_ID_MAX_LENGTH 23
 
 struct mosquitto_message{
+    /* 标识位 */
     int mid;
+    /* 主题 */
     char *topic;
+    /* 有效负载 */
     void *payload;
+    /* 有效负载长度 */
     int payloadlen;
+    /* Qos等级 */
     int qos;
+    /* retain */
     bool retain;
 };
 
@@ -65,6 +79,8 @@ int mosquitto_disconnect(struct mosquitto *mosq);
 
 #pragma mark publish
 int mosquitto_publish(struct mosquitto *mosq, int *mid, const char *topic, int paylodlen, const char *paylod, int qos, bool retain);
+
+void mosquitto_destroy(struct mosquitto *mosq);
 #endif /* mosquitto_h */
 
 

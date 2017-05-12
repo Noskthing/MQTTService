@@ -21,4 +21,7 @@ void _mosquitto_messages_retry_check(struct mosquitto *mosq);
 int _mosquitto_message_delete(struct mosquitto *mosq, uint16_t mid, enum mosquitto_msg_direction dir);
 int _mosquitto_message_update(struct mosquitto *mosq, uint16_t mid, enum mosquitto_msg_direction dir, enum mosquitto_msg_state state);
 int _mosquitto_message_remove(struct mosquitto *mosq, uint16_t mid, enum mosquitto_msg_direction dir, struct mosquitto_message_all **message);
+
+void _mosquitto_message_cleanup(struct mosquitto_message_all **message);
+void _mosquitto_message_cleanup_all(struct mosquitto *mosq);
 #endif /* message_mosq_h */

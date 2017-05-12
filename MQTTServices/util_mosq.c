@@ -123,3 +123,37 @@ uint16_t _mosquitto_mid_generate(struct mosquitto *mosq)
     
     return mosq->last_mid;
 }
+
+/* Convert ////some////over/slashed///topic/etc/etc//
+ * into some/over/slashed/topic/etc/etc
+ */
+int _mosquitto_fix_sub_topic(char **subtopic)
+{
+    char *fixed = NULL;
+    char *token;
+    char *saveptr = NULL;
+    
+    assert(subtopic);
+    assert(*subtopic);
+    
+    if(strlen(*subtopic) == 0) return MOSQ_ERR_SUCCESS;
+    /* size of fixed here is +1 for the terminating 0 and +1 for the spurious /
+     * that gets appended. */
+    fixed = _mosquitto_calloc(strlen(*subtopic)+2, 1);
+    if(!fixed) return MOSQ_ERR_NOMEM;
+    
+    if((*subtopic)[0] == '/'){
+        fixed[0] = '/';
+    }
+    token = strtok_r(*subtopic, "/", &saveptr);
+    while(token){
+        strcat(fixed, token);
+        strcat(fixed, "/");
+        token = strtok_r(NULL, "/", &saveptr);
+    }
+    
+    fixed[strlen(fixed)-1] = '\0';
+    _mosquitto_free(*subtopic);
+    *subtopic = fixed;
+    return MOSQ_ERR_SUCCESS;
+}

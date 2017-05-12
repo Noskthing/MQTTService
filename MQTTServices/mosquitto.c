@@ -13,9 +13,11 @@
 #include "logger.h"
 #include "time_mosq.h"
 #include "handle_mosq.h"
+#include "will_mosq.h"
 
 static int _mosquitto_reconnect(struct mosquitto *mosq, bool blocking);
 static int _mosquitto_loop_rc_handle(struct mosquitto *mosq, int rc);
+void _mosquitto_destroy(struct mosquitto *mosq);
 
 int mosquitto_init(struct mosquitto *mosq, const char *id, bool clean_session, void *userdata)
 {
@@ -112,6 +114,10 @@ struct mosquitto *mosquitto_new(const char *id, bool clean_session ,void *userda
     mosq = (struct mosquitto *)_mosquitto_calloc(1, sizeof(struct mosquitto));
     if (mosq)
     {
+        mosq->sock = INVALID_SOCKET;
+#ifdef WITH_THREADING
+        mosq->thread_id = pthread_self();
+#endif
         rc = mosquitto_init(mosq, id, clean_session, userdata);
         if (rc)
         {
@@ -653,4 +659,77 @@ int mosquitto_disconnect(struct mosquitto *mosq)
     if (mosq->sock == INVALID_SOCKET) return MOSQ_ERR_NO_CONN;
         
     return client_send_disconnect_command_mosq(mosq);
+}
+
+void _mosquitto_destroy(struct mosquitto *mosq)
+{
+    if (!mosq) return;
+    
+#ifdef WITH_THREADING
+    if(!pthread_equal(mosq->thread_id, pthread_self())){
+        pthread_cancel(mosq->thread_id);
+        pthread_join(mosq->thread_id, NULL);
+    }
+    
+    if(mosq->id){
+        /*
+         如果mosq->id不为空代表客户端已经初始化完成，需要释放这些互斥锁
+         如果为空，就不用关心了
+         */
+        pthread_mutex_destroy(&mosq->callback_mutex);
+        pthread_mutex_destroy(&mosq->log_callback_mutex);
+        pthread_mutex_destroy(&mosq->state_mutex);
+        pthread_mutex_destroy(&mosq->out_packet_mutex);
+        pthread_mutex_destroy(&mosq->current_out_packet_mutex);
+        pthread_mutex_destroy(&mosq->msgtime_mutex);
+        pthread_mutex_destroy(&mosq->message_mutex);
+    }
+#endif
+    
+    _mosquitto_socket_close(mosq);
+    _mosquitto_message_cleanup_all(mosq);
+    _mosquitto_will_clear(mosq);
+    
+    /* Paramter cleanup */
+    if (mosq->address)
+    {
+        _mosquitto_free(mosq->address);
+        mosq->address = NULL;
+    }
+    if(mosq->id)
+    {
+        _mosquitto_free(mosq->id);
+        mosq->id = NULL;
+    }
+    if(mosq->username)
+    {
+        _mosquitto_free(mosq->username);
+        mosq->username = NULL;
+    }
+    if(mosq->password)
+    {
+        _mosquitto_free(mosq->password);
+        mosq->password = NULL;
+    }
+    if(mosq->host)
+    {
+        _mosquitto_free(mosq->host);
+        mosq->host = NULL;
+    }
+    if(mosq->bind_address)
+    {
+        _mosquitto_free(mosq->bind_address);
+        mosq->bind_address = NULL;
+    }
+    
+    _mosquitto_out_packet_cleanup_all(mosq);
+    _mosquitto_packet_cleanup(&mosq->in_packet);
+}
+
+void mosquitto_destroy(struct mosquitto *mosq)
+{
+    if(!mosq) return;
+    
+    _mosquitto_destroy(mosq);
+    _mosquitto_free(mosq);
 }
