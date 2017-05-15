@@ -17,6 +17,7 @@
 
 static int _mosquitto_reconnect(struct mosquitto *mosq, bool blocking);
 static int _mosquitto_loop_rc_handle(struct mosquitto *mosq, int rc);
+static int _mosquitto_connect_init(struct mosquitto *mosq, const char *host, int port, int keepalive, const char *bind_address);
 void _mosquitto_destroy(struct mosquitto *mosq);
 
 int mosquitto_init(struct mosquitto *mosq, const char *id, bool clean_session, void *userdata)
@@ -100,6 +101,27 @@ int mosquitto_init(struct mosquitto *mosq, const char *id, bool clean_session, v
     return MOSQ_ERR_SUCCESS;
 }
 
+static int _mosquitto_connect_init(struct mosquitto *mosq, const char *host, int port, int keepalive, const char *bind_address)
+{
+    if(!mosq) return MOSQ_ERR_INVAL;
+    if(!host || port <= 0) return MOSQ_ERR_INVAL;
+    
+    if(mosq->host) _mosquitto_free(mosq->host);
+    mosq->host = _mosquitto_strdup(host);
+    if(!mosq->host) return MOSQ_ERR_NOMEM;
+    mosq->port = port;
+    
+    if(mosq->bind_address) _mosquitto_free(mosq->bind_address);
+    if(bind_address){
+        mosq->bind_address = _mosquitto_strdup(bind_address);
+        if(!mosq->bind_address) return MOSQ_ERR_NOMEM;
+    }
+    
+    mosq->keepalive = keepalive;
+    
+    return MOSQ_ERR_SUCCESS;
+}
+
 struct mosquitto *mosquitto_new(const char *id, bool clean_session ,void *userdata)
 {
     struct mosquitto *mosq = NULL;
@@ -138,6 +160,24 @@ struct mosquitto *mosquitto_new(const char *id, bool clean_session ,void *userda
         errno = ENOMEM;
     }
     return mosq;
+}
+
+int mosquitto_connect_bind(struct mosquitto *mosq, const char *host, int port, int keepalive, const char *bind_address)
+{
+    int rc;
+    rc = _mosquitto_connect_init(mosq, host, port, keepalive, bind_address);
+    if(rc) return rc;
+    
+    pthread_mutex_lock(&mosq->state_mutex);
+    mosq->state = mosq_cs_new;
+    pthread_mutex_unlock(&mosq->state_mutex);
+    
+    return _mosquitto_reconnect(mosq, true);
+}
+
+int mosquitto_connect(struct mosquitto *mosq, const char *host, int port, int keepalive)
+{
+    return mosquitto_connect_bind(mosq, host, port, keepalive, NULL);
 }
 
 int mosquitto_reconnect(struct mosquitto *mosq)
