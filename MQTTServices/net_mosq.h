@@ -36,7 +36,8 @@ typedef int ssize_t;
 #include "time_mosq.h"
 #endif /* net_mosq_h */
 
-
+void _mosquitto_net_init(void);
+void _mosquitto_net_cleanup(void);
 
 int _mosquitto_socket_connect(struct mosquitto* mosq,const char * host,uint16_t port,const char * bind_address,bool blocking);
 int _mosquitto_socket_close(struct mosquitto *mosq);
@@ -44,3 +45,7 @@ int _mosquitto_socket_close(struct mosquitto *mosq);
 int _mosquitto_packet_queue(struct mosquitto *mosq, struct _mosquitto_packet *packet);
 
 int _mosquitto_packet_write(struct mosquitto *mosq);
+
+
+ssize_t _mosquitto_net_read(struct mosquitto *mosq, void *buf, int count);
+ssize_t _mosquitto_net_write(struct mosquitto *mosq, void *buf, int count);

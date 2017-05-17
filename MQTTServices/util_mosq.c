@@ -157,3 +157,8 @@ int _mosquitto_fix_sub_topic(char **subtopic)
     *subtopic = fixed;
     return MOSQ_ERR_SUCCESS;
 }
+
+FILE *_mosquitto_fopen(const char *path, const char *mode)
+{
+    return fopen(path, mode);
+}

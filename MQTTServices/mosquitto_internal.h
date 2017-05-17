@@ -172,15 +172,25 @@ struct mosquitto {
     //遗嘱消息
     struct mosquitto_message *will;
 #ifdef WITH_TLS
+    /* ssl对象 */
     SSL *ssl;
+    /* ssl会话环境 */
     SSL_CTX *ssl_ctx;
+    /* tls文件 */
     char *tls_cafile;
+    /* tls文件路径 */
     char *tls_capath;
+    /* ssl/tls证书 */
     char *tls_certfile;
+    /* ssl/tls私钥 */
     char *tls_keyfile;
+    /* 加载证书口令的回调函数 */
     int (*tls_pw_callback)(char *buf, int size, int rwflag, void *userdata);
+    /* 会话握手方式 */
     int tls_cert_reqs;
+    /* tls版本 */
     char *tls_version;
+    /* 加密方式 */
     char *tls_ciphers;
     char *tls_psk;
     char *tls_psk_identity;

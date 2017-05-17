@@ -66,6 +66,9 @@ struct mosquitto_message{
 
 struct mosquitto;
 
+#pragma mark set methods
+int mosquitto_tls_set(struct mosquitto *mosq, const char *cafile, const char *capath, const char *certfile, const char *keyfile, int (*pw_callback)(char *buf, int size, int rwflag, void *userdata));
+
 #pragma mark init methods
 struct mosquitto *mosquitto_new(const char *id, bool clean_session ,void *userdata);
 int mosquitto_init(struct mosquitto *mosq, const char *id, bool clean_session, void *userdata);

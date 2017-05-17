@@ -98,6 +98,11 @@ int mosquitto_init(struct mosquitto *mosq, const char *id, bool clean_session, v
     mosq->reconnect_delay_max = 1;
     mosq->reconnect_exponential_backoff = false;
     mosq->threaded = false;
+#ifdef WITH_TLS
+    mosq->ssl = NULL;
+    mosq->tls_cert_reqs = SSL_VERIFY_PEER;
+    mosq->tls_insecure = false;
+#endif
     return MOSQ_ERR_SUCCESS;
 }
 
@@ -283,7 +288,7 @@ int _mosquitto_packet_read(struct mosquitto *mosq)
     ssize_t read_length;
     if (!mosq->in_packet.command)
     {
-        read_length = read(mosq->sock, &byte, 1);
+        read_length = _mosquitto_net_read(mosq, &byte, 1);
         if (read_length == 1)
         {
             mosq->in_packet.command = byte;
@@ -326,7 +331,7 @@ int _mosquitto_packet_read(struct mosquitto *mosq)
         /* Get remaining length */
         do
         {
-            read_length = read(mosq->sock, &byte, 1);
+            read_length = _mosquitto_net_read(mosq, &byte, 1);
             if (read_length == 1)
             {
                 mosq->in_packet.remaining_count ++;
@@ -367,7 +372,7 @@ int _mosquitto_packet_read(struct mosquitto *mosq)
     
     while (mosq->in_packet.to_process)
     {
-        read_length = read(mosq->sock, &(mosq->in_packet.payload[mosq->in_packet.pos]), mosq->in_packet.to_process);
+        read_length = _mosquitto_net_read(mosq, &(mosq->in_packet.payload[mosq->in_packet.pos]), mosq->in_packet.to_process);
         if (read_length > 0)
         {
             mosq->in_packet.pos += read_length;
@@ -540,6 +545,12 @@ int mosquitto_loop(struct mosquitto *mosq, int timeout, int max_packets)
     if (mosq->out_packet || mosq->current_out_packet)
     {
         __DARWIN_FD_SET(mosq->sock, &writefds);
+#ifdef WITH_TLS
+    }
+    else if (mosq->ssl && mosq->want_write)
+    {
+        __DARWIN_FD_SET(mosq->sock, &writefds);
+#endif
     }
 
     struct timespec local_timeout;
@@ -730,6 +741,24 @@ void _mosquitto_destroy(struct mosquitto *mosq)
     _mosquitto_message_cleanup_all(mosq);
     _mosquitto_will_clear(mosq);
     
+#ifdef WITH_TLS
+    if(mosq->ssl){
+        SSL_free(mosq->ssl);
+    }
+    if(mosq->ssl_ctx){
+        SSL_CTX_free(mosq->ssl_ctx);
+    }
+    if(mosq->tls_cafile) _mosquitto_free(mosq->tls_cafile);
+    if(mosq->tls_capath) _mosquitto_free(mosq->tls_capath);
+    if(mosq->tls_certfile) _mosquitto_free(mosq->tls_certfile);
+    if(mosq->tls_keyfile) _mosquitto_free(mosq->tls_keyfile);
+    if(mosq->tls_pw_callback) mosq->tls_pw_callback = NULL;
+    if(mosq->tls_version) _mosquitto_free(mosq->tls_version);
+    if(mosq->tls_ciphers) _mosquitto_free(mosq->tls_ciphers);
+    if(mosq->tls_psk) _mosquitto_free(mosq->tls_psk);
+    if(mosq->tls_psk_identity) _mosquitto_free(mosq->tls_psk_identity);
+#endif
+    
     /* Paramter cleanup */
     if (mosq->address)
     {
@@ -772,4 +801,113 @@ void mosquitto_destroy(struct mosquitto *mosq)
     
     _mosquitto_destroy(mosq);
     _mosquitto_free(mosq);
+}
+
+int mosquitto_tls_set(struct mosquitto *mosq, const char *cafile, const char *capath, const char *certfile, const char *keyfile, int (*pw_callback)(char *buf, int size, int rwflag, void *userdata))
+{
+#ifdef WITH_TLS
+    FILE *fptr;
+    
+    if (!mosq || !(cafile || capath) || (certfile && !keyfile) || (!certfile && keyfile)) return MOSQ_ERR_INVAL;
+        
+    if (cafile)
+    {
+        fptr = _mosquitto_fopen(cafile, "rt");
+        if (fptr)
+        {
+            fclose(fptr);
+        }
+        else
+        {
+            return MOSQ_ERR_INVAL;
+        }
+        mosq->tls_cafile = _mosquitto_strdup(cafile);
+        if (!mosq->tls_cafile)
+        {
+            return MOSQ_ERR_NOMEM;
+        }
+    }
+    else if (mosq->tls_cafile)
+    {
+        _mosquitto_free(mosq->tls_cafile);
+        mosq->tls_cafile = NULL;
+    }
+    
+    if (certfile)
+    {
+        fptr = _mosquitto_fopen(certfile, "rt");
+        if (fptr)
+        {
+            fclose(fptr);
+        }
+        else
+        {
+            if (mosq->tls_cafile)
+            {
+                _mosquitto_free(mosq->tls_cafile);
+                mosq->tls_cafile = NULL;
+            }
+            if (mosq->tls_capath)
+            {
+                _mosquitto_free(mosq->tls_capath);
+                mosq->tls_capath = NULL;
+            }
+            return MOSQ_ERR_INVAL;
+        }
+        mosq->tls_certfile = _mosquitto_strdup(certfile);
+        if(!mosq->tls_certfile)
+        {
+            return MOSQ_ERR_NOMEM;
+        }
+    }
+    else
+    {
+        if(mosq->tls_certfile) _mosquitto_free(mosq->tls_certfile);
+        mosq->tls_certfile = NULL;
+    }
+    
+    if(keyfile)
+    {
+        fptr = _mosquitto_fopen(keyfile, "rt");
+        if(fptr)
+        {
+            fclose(fptr);
+        }
+        else
+        {
+            if(mosq->tls_cafile)
+            {
+                _mosquitto_free(mosq->tls_cafile);
+                mosq->tls_cafile = NULL;
+            }
+            if(mosq->tls_capath)
+            {
+                _mosquitto_free(mosq->tls_capath);
+                mosq->tls_capath = NULL;
+            }
+            if(mosq->tls_certfile)
+            {
+                _mosquitto_free(mosq->tls_certfile);
+                mosq->tls_certfile = NULL;
+            }
+            return MOSQ_ERR_INVAL;
+        }
+        mosq->tls_keyfile = _mosquitto_strdup(keyfile);
+        if(!mosq->tls_keyfile)
+        {
+            return MOSQ_ERR_NOMEM;
+        }
+    }
+    else
+    {
+        if(mosq->tls_keyfile) _mosquitto_free(mosq->tls_keyfile);
+        mosq->tls_keyfile = NULL;
+    }
+    
+    mosq->tls_pw_callback = pw_callback;
+    
+    return MOSQ_ERR_SUCCESS;
+#else
+    return MOSQ_ERR_NOT_SUPPORTED;
+#endif
 }

@@ -36,3 +36,6 @@ uint16_t _mosquitto_mid_generate(struct mosquitto *mosq);
 
 #pragma mark 
 int _mosquitto_fix_sub_topic(char **subtopic);
+
+#pragma mark
+FILE *_mosquitto_fopen(const char *path, const char *mode);
